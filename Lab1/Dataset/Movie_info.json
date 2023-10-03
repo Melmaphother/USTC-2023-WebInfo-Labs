@@ -1,0 +1,30 @@
+{
+    "name": "Melmaphother",
+    "type": "Person",
+    "director": "a",
+    "characters": {
+        "1": "b",
+        "2": "v",
+        "3": "c"
+    }
+}{
+    "name": "Melmaphother",
+    "type": "Person",
+    "director": "a",
+    "characters": [
+        "b",
+        "v",
+        "c"
+    ]
+}{
+    "1234567": {
+        "name": "Melmaphother",
+        "type": "Person",
+        "director": "a",
+        "characters": [
+            "b",
+            "v",
+            "c"
+        ]
+    }
+}
