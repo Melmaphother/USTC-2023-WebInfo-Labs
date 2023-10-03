@@ -1,6 +1,5 @@
 import json
 import requests
-from bs4 import BeautifulSoup
 
 # path = '../Dataset/Book_id.csv'
 # save_path = path[:path.rfind('/')] + '/Movie_info.json'
@@ -38,26 +37,41 @@ from bs4 import BeautifulSoup
 
 from bs4 import BeautifulSoup
 
-html = """
-<html>
-  <head>
-    <title>Example</title>
-  </head>
-  <body>
-    <p>Hello, <b>world</b>!</p>
-  </body>
-</html>
-"""
+with open('douban.html', 'r', encoding='UTF-8') as f:
+    text = f.read()
 
-soup = BeautifulSoup(html, 'html.parser')
+# print(text)
+info = {}
 
-print(type(soup))
-# 获取标题标签
-title_tag = soup.title
-print(type(title_tag))
-print(title_tag.text)  # 输出：Example
-print(type(title_tag.text))
+def parse_text(movie_id, text):
+    # 这里应当维护一个字典 info ，包含了需要爬取的有效信息，结构应当为
+    # {'name': ' ', 'type': ' ', 'director': ' ', 'characters': ['', '', '', ...], ...}
+    soup = BeautifulSoup(text, 'html.parser')
+    name = soup.find('span', {'property': 'v:itemreviewed'})
+    if name is None:
+        print(movie_id, "没有名称\n")
+        return None
+    print(name.text)
+    info['name'] = name.text
+    main_info = soup.find('div', {'id': 'info'})
+    print(main_info.text)
+    if main_info is None:
+        print(movie_id, "没有导演等主要信息\n")
+        return None
 
-# 获取段落标签
-p_tag = soup.p
-print(p_tag.text)  # 输出：Hello, world!
+
+parse_text('1111111', text)
+
+# main_info.text 的结果
+# 剥离出对应的信息
+
+# 导演: 弗兰克·德拉邦特
+# 编剧: 弗兰克·德拉邦特 / 斯蒂芬·金
+# 主演: 蒂姆·罗宾斯 / 摩根·弗里曼 / 鲍勃·冈顿 / 威廉姆·赛德勒 / 克兰西·布朗 / 吉尔·贝罗斯 / 马克·罗斯顿 / 詹姆斯·惠特摩 / 杰弗里·德曼 / 拉里·布兰登伯格 / 尼尔·吉恩托利 / 布赖恩·利比 / 大卫·普罗瓦尔 / 约瑟夫·劳格诺 / 祖德·塞克利拉 / 保罗·麦克兰尼 / 芮妮·布莱恩 / 阿方索·弗里曼 / V·J·福斯特 / 弗兰克·梅德拉诺 / 马克·迈尔斯 / 尼尔·萨默斯 / 耐德·巴拉米 / 布赖恩·戴拉特 / 唐·麦克马纳斯
+# 类型: 剧情 / 犯罪
+# 制片国家/地区: 美国
+# 语言: 英语
+# 上映日期: 1994-09-10(多伦多电影节) / 1994-10-14(美国)
+# 片长: 142分钟
+# 又名: 月黑高飞(港) / 刺激1995(台) / 地狱诺言 / 铁窗岁月 / 消香克的救赎
+# IMDb: tt0111161
