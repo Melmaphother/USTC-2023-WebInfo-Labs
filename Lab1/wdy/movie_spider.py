@@ -64,6 +64,7 @@ class Movie(Spider):
         if main_info is None:
             print(movie_id, "没有导演等主要信息\n")
             return None
+        # TODO
 
     def save_info_to_json(self, movie_id):
         index = self.movie_path.rfind('/')
