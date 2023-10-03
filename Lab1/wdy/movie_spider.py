@@ -1,6 +1,6 @@
 import os
 import time
-
+from bs4 import BeautifulSoup
 import requests
 import json
 
@@ -35,19 +35,37 @@ class Spider:
 class Movie(Spider):
     error = []
     info = {
-
+        "name": "",
+        "type": "",
+        "director": "",
+        "characters": {},
+        "country_or_region": "",
+        "language": "",
+        "time": "",
+        "alias": {},
+        "IMDb": "",
+        "intro": ""
     }
 
     def __init__(self, movie_path):
         self.movie_id_list = self.get_id_list(movie_path)
         self.movie_path = movie_path
 
-    def parse_text(self, text) -> dict:
+    def parse_text(self, text, movie_id):
         # 这里应当维护一个字典 info ，包含了需要爬取的有效信息，结构应当为
         # {'name': ' ', 'type': ' ', 'director': ' ', 'characters': ['', '', '', ...], ...}
-        pass
+        soup = BeautifulSoup(text, 'html.parser')
+        name = soup.find('span', 'property="v:itemreviewed"')
+        if name is None:
+            print(movie_id, "没有名称\n")
+            return None
+        self.info['name'] = name.text
+        main_info = soup.find('div', 'id:"info"')
+        if main_info is None:
+            print(movie_id, "没有导演等主要信息\n")
+            return None
 
-    def save_info_to_json(self):
+    def save_info_to_json(self, movie_id):
         index = self.movie_path.rfind('/')
         save_path = self.movie_path[0:index] + '/Movie_info.json' if index != -1 else 'Movie_info.json'
         with open(save_path, 'a+') as f:
@@ -68,7 +86,7 @@ class Movie(Spider):
                 print("id：{} 的资源不存在！\n".format(movie_id))
                 self.error.append(movie_id)
             else:
-                self.parse_text(text)
+                self.parse_text(text, movie_id)
                 self.save_info_to_json()
 
             time.sleep(2)  # 休眠 2s
@@ -79,3 +97,4 @@ class Movie(Spider):
 if __name__ == '__main__':
     movie_path = '../Dataset/Movie_id.csv'
     movie_spider = Movie(movie_path)
+    movie_spider.run()
