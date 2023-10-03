@@ -41,7 +41,8 @@ class Movie(Spider):
         "characters": {},
         "country_or_region": "",
         "language": "",
-        "time": "",
+        "release_date"
+        "film_length": "",
         "alias": {},
         "IMDb": "",
         "intro": ""
@@ -55,16 +56,21 @@ class Movie(Spider):
         # 这里应当维护一个字典 info ，包含了需要爬取的有效信息，结构应当为
         # {'name': ' ', 'type': ' ', 'director': ' ', 'characters': ['', '', '', ...], ...}
         soup = BeautifulSoup(text, 'html.parser')
-        name = soup.find('span', 'property="v:itemreviewed"')
+        name = soup.find('span', {'property': 'v:itemreviewed'})
         if name is None:
             print(movie_id, "没有名称\n")
             return None
         self.info['name'] = name.text
-        main_info = soup.find('div', 'id:"info"')
+        main_info = soup.find('div', {'id': 'info'})
         if main_info is None:
             print(movie_id, "没有导演等主要信息\n")
             return None
         # TODO
+        intro = soup.find('span', {'class': "all hidden"})
+        if intro is None:
+            print(movie_id, "没有介绍\n")
+            return None
+        self.info[intro] = intro.text
 
     def save_info_to_json(self, movie_id):
         index = self.movie_path.rfind('/')
