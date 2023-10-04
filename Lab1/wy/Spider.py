@@ -10,14 +10,16 @@ class Spider:
         self.header = header
         self.url = []
 
-    def get_id_list(self):
+    def get_id_list(self) -> List[str]:
         with open(self.spider_path, "r") as f:
             id = f.readlines()
-            self.id_list = [id_single.strip() for id_single in id]
+            self.id_list = [id_single.rstrip() for id_single in id]
+        return self.id_list
 
-    def create_url(self):
+    def create_url(self) -> List[str]:
         for id_ in self.id_list:
             self.url.append(self.pre_url + id_)
+        return self.url
 
     def get_response(self, request_url: str):
         respond = requests.get(url=request_url, headers=self.header)
