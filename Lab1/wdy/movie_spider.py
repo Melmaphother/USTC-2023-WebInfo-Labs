@@ -54,8 +54,9 @@ class Movie(Spider):
         """
         name = soup.find('span', {'property': 'v:itemreviewed'})
         if name is None:
-            print(movie_id, "没有名称\n")
-            self.error.append(movie_id + '\n')
+            error_msg = movie_id + "没有名称\n"
+            print(error_msg)
+            self.error.append(error_msg)
             info['name'] = ''
         else:
             info['name'] = name.text
@@ -64,8 +65,9 @@ class Movie(Spider):
         """
         main_info = soup.find('div', {'id': 'info'})
         if main_info is None:
-            print(movie_id, "没有导演等主要信息\n")
-            self.error.append(movie_id + '\n')
+            error_msg = movie_id + "没有导演等主要信息\n"
+            print(error_msg)
+            self.error.append(error_msg)
             return None
         match_list = {'导演: ': '', '编剧: ': '', '主演: ': '', '类型: ': '', '制片国家/地区: ': '', '语言: ': '',
                       '上映日期: ': '', '片长: ': '', '又名: ': '', 'IMDb: ': ''}
@@ -75,17 +77,18 @@ class Movie(Spider):
             if match:
                 match_list[item] = match.group(1)
             else:
-                print(movie_id, "中'", item, "'没有对应匹配\n")
+                error_msg = movie_id + "中'" + item + "'没有对应匹配\n"
+                print(error_msg)
+                self.error.append(error_msg)
                 match_list[item] = ''
-                self.error.append(movie_id + '\n')
         info['director'] = match_list['导演: '].split(' / ')
         info['characters'] = match_list['主演: '].split(' / ')
         info['playwright'] = match_list['编剧: '].split(' / ')
         info['type'] = match_list['类型: '].split(' / ')
         info['country_or_region'] = match_list['制片国家/地区: '].split(' / ')
         info['language'] = match_list['语言: '].split(' / ')
-        info['release_date'] = match_list['上映日期: '].split(' / ')
-        info['film_length'] = match_list['片长: ']
+        info['release_date'] = match_list['上映日期: '].split(' / ')  # 可能不同地区有多个上映日期
+        info['film_length'] = match_list['片长: '].split(' / ')  # 可能有加长版
         info['alias'] = match_list['又名: '].split(' / ')
         info['IMDb'] = match_list['IMDb: ']
         """
@@ -94,26 +97,27 @@ class Movie(Spider):
         intro = soup.find('span', {'class': 'all hidden'})
         intro = soup.find('span', {'property': 'v:summary'}) if intro is None else intro
         if intro is None:
-            print(movie_id, "没有介绍\n")
-            self.error.append(movie_id + '\n')
+            error_msg = movie_id + "没有介绍\n"
+            print(error_msg)
+            self.error.append(error_msg)
             info['intro'] = ''
         else:
             intro_text = intro.text.replace('\n', '').replace('\r', '')  # Windows下两个要同时去除
             intro_text = intro_text.replace('　', '').strip()  # 注意这里是 全角空格
-            intro_text = intro_text.replace('  ', '')
+            intro_text = intro_text.replace('  ', '')  # 尽量去除中间的空格, 最终只会留下最多一个空格
             info['intro'] = intro_text
 
         return info
 
     def save_all_info_to_json(self):
         index = self.movie_id_path.rfind('/')
-        save_path = self.movie_id_path[0:index] + '/Movie_info.json' if index != -1 else 'Movie_info.json'
+        save_path = self.movie_id_path[0:index] + '/Movie_info1.json' if index != -1 else 'Movie_info1.json'
         with open(save_path, 'w', encoding='UTF-8') as f:
             json.dump(self.all_info, f, indent=4, ensure_ascii=False)
 
     def save_error_message(self):
         index = self.movie_id_path.rfind('/')
-        save_path = self.movie_id_path[0:index] + '/Movie_error.txt' if index != -1 else 'Movie_error.txt'
+        save_path = self.movie_id_path[0:index] + '/Movie_error1.txt' if index != -1 else 'Movie_error1.txt'
         with open(save_path, 'w') as f:
             f.writelines(self.error)
 
@@ -129,12 +133,14 @@ class Movie(Spider):
             else:
                 self.all_info[movie_id] = self.parse_text(text, movie_id)
             print("    id为 {} 的电影的信息爬取完毕\n".format(movie_id))
+            if self.count % 20 == 0:
+                print("   ", time.ctime())
             time.sleep(random.uniform(0.5, 1))  # 休眠 0.5 ~ 1s
         self.save_all_info_to_json()
         self.save_error_message()
 
 
 if __name__ == '__main__':
-    movie_path = '../Dataset/Movie_id.csv'
+    movie_path = '../Dataset/Movie_id_tmp1.csv'
     movie_spider = Movie(movie_path)
     movie_spider.run()
