@@ -24,7 +24,7 @@ class UAPool:
         self.add_ua_to_pool(times)
         self.count = times
 
-    def pop(self):
+    def pop_pool(self):
         if self.count >= 1:
             self.count -= 1
         else:
