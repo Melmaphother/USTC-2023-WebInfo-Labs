@@ -6,12 +6,13 @@ import json
 
 
 class Spider:
-    prefix_url = 'https://movie.douban.com/subject/{}/'
-    headers = {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)\
-                 AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.0.0 Safari/537.36'
-    }
-    id_list = []
+    def __init__(self):
+        self.prefix_url = 'https://movie.douban.com/subject/{}/'
+        self.headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)\
+                     AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.0.0 Safari/537.36'
+        }
+        self.id_list = []
 
     def get_head(self) -> dict:
         return self.headers
@@ -35,6 +36,7 @@ class Spider:
 class Movie(Spider):
 
     def __init__(self, movie_path):
+        super(Movie, self).__init__()
         self.movie_id_list = self.get_id_list(movie_path)
         self.movie_path = movie_path
         self.error = []
