@@ -121,6 +121,6 @@ class Movie(Spider):
 
 
 if __name__ == '__main__':
-    movie_path = '../Dataset/Movie_id.csv'
+    movie_path = '../Dataset/Movie_id_tmp.csv'
     movie_spider = Movie(movie_path)
     movie_spider.run()
