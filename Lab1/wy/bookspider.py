@@ -5,6 +5,7 @@ import json
 
 
 class bookSpider(Spider):
+    # douban book spider
     def __init__(self, pre_url, spider_path, header):
         super(bookSpider, self).__init__(pre_url, spider_path, header)
         self.book_list = []
