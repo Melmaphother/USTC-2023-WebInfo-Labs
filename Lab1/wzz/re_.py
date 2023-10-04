@@ -15,15 +15,12 @@ if __name__ == "__main__":
 IMDb: tt0111161"""
     matchlist = ['导演: ',"编剧: ","主演: ","类型: ","制片国家/地区: ","语言: ","片长: ","又名: "]
 
-
     for item in matchlist:
         match = re.search(item+r'(.*)$', text, re.M)
         if match:
-            print(match.group(1))
+            print(match.group(1).split(" / ")) 
         else:
             print("unmatch")
 
-    # pattern = re.compile(matchlist)
-    # pattern.findall(text)
 
 
