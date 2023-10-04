@@ -13,7 +13,8 @@ class Spider:
     def get_id_list(self) -> List[str]:
         with open(self.spider_path, "r") as f:
             id = f.readlines()
-            self.id_list = [id_single.rstrip() for id_single in id]
+            for id_single in id:
+                self.id_list.append(id_single.rstrip())
         return self.id_list
 
     def create_url(self) -> List[str]:

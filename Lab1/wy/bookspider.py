@@ -15,11 +15,14 @@ class bookSpider(Spider):
         book_title = str(soup.find('span', property='v:itemreviewed')).strip()
         book_score = soup.find('strong', property="v:average")
         book_score = str(book_score.next).strip()
-        book_tag = {"id": id, "title": book_title, "score": book_score}
-        self.book_list.append(book_tag)
-        return book_tag
+        book_dict = {"id": id_single, "title": book_title, "score": book_score}
+        self.book_list.append(book_dict)
+        return book_dict
 
     def save_to_json(self):
         for book in self.book_list:
-            with open('./test.json', 'a+') as f:
-                json.dump(book, f)
+            json_obj = json.dumps(book)
+            with open("test.json", 'a+') as f:
+                f.write(json_obj)
+
+
