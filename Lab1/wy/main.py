@@ -1,5 +1,4 @@
 import time
-
 import bookspider
 
 if __name__ == "main":
