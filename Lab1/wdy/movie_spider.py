@@ -114,7 +114,7 @@ class Movie(Spider):
                 self.error.append(movie_id)
             else:
                 self.parse_text(text, movie_id)
-                self.save_info_to_json()
+                self.save_info_to_json(movie_id)
 
             time.sleep(2)  # 休眠 2s
         self.save_error_message()
