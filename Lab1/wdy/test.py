@@ -35,53 +35,53 @@ import requests
 # print(status_code)
 
 
-from bs4 import BeautifulSoup
-
-def string_to_ascii(input_string):
-    ascii_result = []
-    for char in input_string:
-        ascii_value = ord(char)
-        ascii_result.append(ascii_value)
-
-    return ascii_result
-
-
-with open('douban.html', 'r', encoding='UTF-8') as f:
-    text = f.read()
-
-# print(text)
-info = {}
-
-
-def parse_text(movie_id, text):
-    # 这里应当维护一个字典 info ，包含了需要爬取的有效信息，结构应当为
-    # {'name': ' ', 'type': ' ', 'director': ' ', 'characters': ['', '', '', ...], ...}
-    soup = BeautifulSoup(text, 'html.parser')
-    name = soup.find('span', {'property': 'v:itemreviewed'})
-    if name is None:
-        print(movie_id, "没有名称\n")
-        return None
-    # print(name.text)
-    info['name'] = name.text
-    main_info = soup.find('div', {'id': 'info'})
-    # print(main_info.text)
-    if main_info is None:
-        print(movie_id, "没有导演等主要信息\n")
-        return None
-    info['main_info'] = main_info.text
-
-    intro = soup.find('span', {'class': "all hidden"})
-    if intro is None:
-        print(movie_id, "没有介绍\n")
-        return None
-    intro_text = intro.text.replace('\n', '').replace('\r', '')
-    intro_text = intro_text.replace('　', '').replace(' ', '')
-    print(string_to_ascii(intro_text))
-    print(intro_text)
-    info[intro] = intro_text
-
-
-parse_text('1111111', text)
+# from bs4 import BeautifulSoup
+#
+# def string_to_ascii(input_string):
+#     ascii_result = []
+#     for char in input_string:
+#         ascii_value = ord(char)
+#         ascii_result.append(ascii_value)
+#
+#     return ascii_result
+#
+#
+# with open('douban.html', 'r', encoding='UTF-8') as f:
+#     text = f.read()
+#
+# # print(text)
+# info = {}
+#
+#
+# def parse_text(movie_id, text):
+#     # 这里应当维护一个字典 info ，包含了需要爬取的有效信息，结构应当为
+#     # {'name': ' ', 'type': ' ', 'director': ' ', 'characters': ['', '', '', ...], ...}
+#     soup = BeautifulSoup(text, 'html.parser')
+#     name = soup.find('span', {'property': 'v:itemreviewed'})
+#     if name is None:
+#         print(movie_id, "没有名称\n")
+#         return None
+#     # print(name.text)
+#     info['name'] = name.text
+#     main_info = soup.find('div', {'id': 'info'})
+#     # print(main_info.text)
+#     if main_info is None:
+#         print(movie_id, "没有导演等主要信息\n")
+#         return None
+#     info['main_info'] = main_info.text
+#
+#     intro = soup.find('span', {'class': "all hidden"})
+#     if intro is None:
+#         print(movie_id, "没有介绍\n")
+#         return None
+#     intro_text = intro.text.replace('\n', '').replace('\r', '')
+#     intro_text = intro_text.replace('　', '').replace(' ', '')
+#     print(string_to_ascii(intro_text))
+#     print(intro_text)
+#     info[intro] = intro_text
+#
+#
+# parse_text('1111111', text)
 
 # main_info.text 的结果
 # 剥离出对应的信息
