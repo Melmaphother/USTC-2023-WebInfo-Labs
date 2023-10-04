@@ -115,7 +115,7 @@ class Movie(Spider):
             movie_url = self.get_url(movie_id)
             text, status_code = self.get_html(movie_url)
             if status_code == 404:
-                print("id：{} 的资源不存在！\n".format(movie_id))
+                print("id: {} 的资源不存在！\n".format(movie_id))
                 self.error.append(movie_id)
             else:
                 self.parse_text(text, movie_id)
