@@ -41,6 +41,7 @@ class Movie(Spider):
         self.movie_path = movie_path
         self.error = []
         self.info = {}
+        self.all_info = {}
 
     def parse_text(self, text, movie_id):
         # 这里应当维护一个字典 info ，包含了需要爬取的有效信息，结构应当为
@@ -52,6 +53,7 @@ class Movie(Spider):
         name = soup.find('span', {'property': 'v:itemreviewed'})
         if name is None:
             print(movie_id, "没有名称\n")
+            self.error.append(movie_id)
             return None
         self.info['name'] = name.text
         """
@@ -60,6 +62,7 @@ class Movie(Spider):
         main_info = soup.find('div', {'id': 'info'})
         if main_info is None:
             print(movie_id, "没有导演等主要信息\n")
+            self.error.append(movie_id)
             return None
         match_list = {'导演: ': '', '编剧: ': '', '主演: ': '', '类型: ': '', '制片国家/地区: ': '', '语言: ': '',
                       '上映日期: ': '', '片长: ': '', '又名: ': '', 'IMDb: ': ''}
@@ -70,6 +73,7 @@ class Movie(Spider):
                 match_list[item] = match.group(1)
             else:
                 print(movie_id, "中'", item, "'没有对应匹配\n")
+                self.error.append(movie_id)
                 return None
         self.info['director'] = match_list['导演: '].split(' / ')
         self.info['characters'] = match_list['主演: '].split(' / ')
@@ -87,16 +91,17 @@ class Movie(Spider):
         intro = soup.find('span', {'class': "all hidden"})
         if intro is None:
             print(movie_id, "没有介绍\n")
+            self.error.append(movie_id)
             return None
         intro_text = intro.text.replace('\n', '').replace('\r', '')  # Windows下两个要同时去除
         intro_text = intro_text.replace('　', '').replace(' ', '')  # 注意前面是全角空格，后面是半角空格
         self.info[intro] = intro_text
 
-    def save_info_to_json(self, movie_id):
+    def save_all_info_to_json(self):
         index = self.movie_path.rfind('/')
         save_path = self.movie_path[0:index] + '/Movie_info.json' if index != -1 else 'Movie_info.json'
         with open(save_path, 'a+') as f:
-            json.dump(self.info, f, indent=4)
+            json.dump(self.all_info, f, indent=4)
 
     def save_error_message(self):
         index = self.movie_path.rfind('/')
@@ -114,9 +119,10 @@ class Movie(Spider):
                 self.error.append(movie_id)
             else:
                 self.parse_text(text, movie_id)
-                self.save_info_to_json(movie_id)
+                self.all_info[movie_id] = self.info
 
             time.sleep(2)  # 休眠 2s
+        self.save_all_info_to_json()
         self.save_error_message()
 
 
