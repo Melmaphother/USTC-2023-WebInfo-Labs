@@ -103,13 +103,24 @@ class Movie(Spider):
 
         return info
 
+    def add_tag(self):
+        tag_path = '../Dataset/Tag/Movie_tag.csv'
+        with open(tag_path, 'r', encoding='UTF-8') as f:
+            lines = f.readlines()
+            for line in lines:
+                tag = line.strip('\n').split(',')
+                if len(tag) == 1:
+                    self.all_info[tag[0]]['tag'] = ''
+                else:
+                    self.all_info[tag[0]]['tag'] = tag[1].strip('"').split(',')
+
     def save_all_info_to_json(self):
         save_path = '../Result/Movie_info.json'
         with open(save_path, 'w', encoding='UTF-8') as f:
             json.dump(self.all_info, f, indent=4, ensure_ascii=False)
 
     def save_error_message(self):
-        save_path = '../Result/Movie_error.json'
+        save_path = '../Result/Movie_error.csv'
         with open(save_path, 'w', encoding='UTF-8') as f:
             f.writelines(self.error)
 
@@ -120,7 +131,7 @@ class Movie(Spider):
             print(self.count, ". 正在爬取id为 {} 的电影的信息".format(movie_id))
             (text, status_code) = self.get_response(movie_url[index], self.get_headers())
             (text, status_code) = self.get_response(movie_url[index], self.cookie) if status_code == 404 else (
-            text, status_code)
+                text, status_code)
             # text, status_code = self.get_html(movie_url, headers)
             if status_code == 404:
                 error_msg = '{}的资源不存在!\n'.format(movie_id)
@@ -131,6 +142,7 @@ class Movie(Spider):
                 print("    id为 {} 的电影的信息爬取完毕\n".format(movie_id))
             if self.count % 20 == 0:
                 print("   ", time.ctime())
-            time.sleep(random.uniform(1.5, 2))  # 休眠 0.5 ~ 1s
+            time.sleep(random.uniform(0.5, 1))  # 休眠 0.5 ~ 1s
+        self.add_tag()
         self.save_all_info_to_json()
         self.save_error_message()
