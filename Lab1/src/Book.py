@@ -65,27 +65,44 @@ class Book(Spider):
         book_content = soup.find('div', attrs={'id': 'info'})
         single_book_dict = {"作者: ": "", "出版社: ": "", "出版年: ": "", "页数: ": "", "定价: ": "", "装帧: ": "",
                             "ISBN: ": ""}
+        book_rating = ''
+        number = []
         if book_content is None:
             error_msg = book_id + "没有基本信息"
             print(error_msg)
             self.error.append(error_msg)
+            book_rating = ''
+            number = [0, 0, 0]
         else:
             for info in single_book_dict.keys():
                 match = re.search(info + r'(.*)$', book_content.text, re.M)
                 if match:
                     single_book_dict[info] = match.group(1)
             book_rating = soup.find('div', attrs={'class': "rating_self clearfix"}).find(
-                property='v:average').text.strip()
+                property='v:average')
+            if book_rating is None:
+                error_msg = book_id + "没有评分\n"
+                print(error_msg)
+                self.error.append(error_msg)
+                book_rating = ''
+            else:
+                book_rating = book_rating.text.strip()
             # catch data of "want to read/ have read/ be reading"
             book_reading_data = soup.find('div', attrs={'id': 'collector'})
-            book_reading_data = book_reading_data.find_all("p", class_="pl")
-            number = []
-            for data in book_reading_data:
-                link = data.find("a")
-                if link:
-                    text = link.get_text()
-                    numbers = re.search(r'\d+', text)
-                    number.append(numbers.group())
+            if book_reading_data is None:
+                error_msg = book_id + "没有想看\n"
+                print(error_msg)
+                self.error.append(error_msg)
+                number = [0, 0, 0]
+            else:
+                book_reading_data = book_reading_data.find_all("p", class_="pl")
+                number = []
+                for data in book_reading_data:
+                    link = data.find("a")
+                    if link:
+                        text = link.get_text()
+                        numbers = re.search(r'\d+', text)
+                        number.append(numbers.group())
         # single book info dictionary
         info = {"title": book_title, "author introduction": book_author_intro,
                 "content introduction": book_content_intro, "rating": book_rating,
@@ -100,7 +117,7 @@ class Book(Spider):
         return info
 
     def add_tag(self):
-        tag_path = '../Dataset/Tag/Book_tag_tmp.csv'
+        tag_path = '../Dataset/Tag/Book_tag.csv'
         with open(tag_path, 'r', encoding='UTF-8') as f:
             lines = f.readlines()
             for line in lines:
@@ -136,7 +153,6 @@ class Book(Spider):
             if self.count % 20 == 0:
                 print("   ", time.ctime())
             time.sleep(random.uniform(0.5, 1))  # 休眠 0.5 ~ 1s
-
         self.add_tag()
         self.save_all_info_to_json()
         self.save_error_message()
