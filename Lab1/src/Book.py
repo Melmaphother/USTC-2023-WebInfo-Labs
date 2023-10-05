@@ -76,7 +76,7 @@ class Book(Spider):
             json.dump(self.all_info, f, indent=4, ensure_ascii=False)
 
     def save_error_message(self):
-        save_path = '../Result/Book_error.json'
+        save_path = '../Result/Book_error.csv'
         with open(save_path, 'w', encoding='UTF-8') as f:
             f.writelines(self.error)
 
@@ -84,7 +84,7 @@ class Book(Spider):
         book_url = self.create_url()
         for index, book_id in enumerate(self.book_id_list):
             self.count += 1
-            print(self.count, ". 正在爬取id为 {} 的电影的信息".format(book_id))
+            print(self.count, ". 正在爬取id为 {} 的书籍的信息".format(book_id))
             (text, status_code) = self.get_response(book_url[index], self.get_headers())
             (text, status_code) = self.get_response(book_url[index], self.cookie) if status_code == 404 else (
                 text, status_code)
@@ -95,9 +95,9 @@ class Book(Spider):
                 self.error.append(error_msg)
             else:
                 self.all_info[book_id] = self.parse_text(text, book_id)
-                print("    id为 {} 的电影的信息爬取完毕\n".format(book_id))
+                print("    id为 {} 的书籍的信息爬取完毕\n".format(book_id))
             if self.count % 20 == 0:
                 print("   ", time.ctime())
-            time.sleep(random.uniform(1.5, 2))  # 休眠 0.5 ~ 1s
+            time.sleep(random.uniform(0.5, 1))  # 休眠 0.5 ~ 1s
         self.save_all_info_to_json()
         self.save_error_message()
