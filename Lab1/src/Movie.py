@@ -104,15 +104,17 @@ class Movie(Spider):
         return info
 
     def add_tag(self):
-        tag_path = '../Dataset/Tag/Movie_tag.csv'
+        tag_path = '../Dataset/Tag/Movie_tag_temp.csv'
         with open(tag_path, 'r', encoding='UTF-8') as f:
             lines = f.readlines()
             for line in lines:
-                tag = line.strip('\n').split(',')
-                if len(tag) == 1:
-                    self.all_info[tag[0]]['tag'] = ''
-                else:
-                    self.all_info[tag[0]]['tag'] = tag[1].strip('"').split(',')
+                line = line.strip('\n')
+                index = line.find(',')
+                if index != -1:
+                    movie_id = line[0:index]
+                    tag = line[index + 1:]
+                    print(movie_id, ' ', tag)
+                self.all_info[movie_id]['tag'] = tag.strip('"').split(',')
 
     def save_all_info_to_json(self):
         save_path = '../Result/Movie_info.json'
