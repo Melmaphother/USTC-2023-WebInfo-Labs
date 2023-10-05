@@ -105,7 +105,6 @@ class Book(Spider):
             lines = f.readlines()
             for line in lines:
                 tag = line.strip('\n').split(',')
-                print(tag)
                 self.all_info[tag[0]]['tag'] = tag[1].strip('"').split(',')
 
     def save_all_info_to_json(self):
