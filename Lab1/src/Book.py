@@ -19,56 +19,94 @@ class Book(Spider):
     def parse_text(self, text: str, book_id: str) -> Dict:
         soup = BeautifulSoup(text, "html.parser")
         # parse book title
-        book_title = soup.find('span', property='v:itemreviewed').text
+        book_title = soup.find('span', property='v:itemreviewed')
+        # book_title error solution
+        if book_title is None:
+            error_msg = book_id + "没有名称\n"
+            print(error_msg)
+            self.error.append(error_msg)
+            book_title = ''
+        else:
+            book_title = book_title.text
         # parse book introduction
         book_intro = soup.find_all('div', attrs={'class': 'intro'})
-        # solve no author or no (展开全部) condition
-        if len(book_intro) >= 2:
-            if book_intro[0].text.find("(展开全部)") == -1:
-                book_content_intro = book_intro[0].text.replace('\n', '')
-                book_author_intro = book_intro[2].text.replace('\n', '')
-            else:
-                if len(book_intro[1].text.rstrip()) > len(book_intro[0].text.rstrip()):
-                    book_content_intro = book_intro[1].text.replace('\n', '')
-                else:
-                    book_content_intro = book_intro[0].text.replace('\n', '')
-                book_author_intro = book_intro[2].text.replace('\n', '')
+        # book_intro error solution
+        if book_intro is None:
+            error_msg = book_id + "没有介绍\n"
+            print(error_msg)
+            self.error.append(error_msg)
+            book_content_intro = ''
+            book_author_intro = ''
         else:
-            if len(book_intro[1].text.rstrip()) > len(book_intro[0].text.rstrip()):
-                book_content_intro = book_intro[1].text.replace('\n', '')
-            else:
+            # solve no author or no (展开全部) condition
+            if len(book_intro) >= 2:
+                if book_intro[0].text.find("(展开全部)") == -1:
+                    book_content_intro = book_intro[0].text.replace('\n', '')
+                    if book_intro[1].text.find("(展开全部)") == -1:
+                        book_author_intro = book_intro[1].text.replace('\n', '')
+                    else:
+                        book_author_intro = book_intro[2].text.replace('\n', '')
+                else:
+                    book_content_intro = book_intro[1].text.replace('\n', '')
+                    if len(book_intro) == 2:
+                        book_author_intro = ''
+                    else:
+                        if book_intro[2].text.find("(展开全部)") == -1:
+                            book_author_intro = book_intro[2].text.replace('\n', '')
+                        else:
+                            book_author_intro = book_intro[3].text.replace('\n', '')
+            elif len(book_intro) == 1:
                 book_content_intro = book_intro[0].text.replace('\n', '')
-            book_author_intro = None
+                book_author_intro = ''
+            else:
+                book_content_intro = ''
+                book_author_intro = ''
         # parse basic book info
         book_content = soup.find('div', attrs={'id': 'info'})
-        single_book_dict = {"作者": "", "出版社": "", "出版年": "", "页数": "", "定价": "", "装帧": "", "ISBN": ""}
-        for info in single_book_dict.keys():
-            match = re.search(info + r'(.*)$', book_content.text, re.M)
-            if match:
-                single_book_dict[info] = match.group(1)
-        book_rating = soup.find('div', attrs={'class': "rating_self clearfix"}).find(property='v:average').text.strip()
-        # catch data of "want to read/ have read/ be reading"
-        book_reading_data = soup.find('div', attrs={'id': 'collector'})
-        book_reading_data = book_reading_data.find_all("p", class_="pl")
-        number = []
-        for data in book_reading_data:
-            link = data.find("a")
-            if link:
-                text = link.get_text()
-                numbers = re.search(r'\d+', text)
-                number.append(numbers.group())
+        single_book_dict = {"作者: ": "", "出版社: ": "", "出版年: ": "", "页数: ": "", "定价: ": "", "装帧: ": "",
+                            "ISBN: ": ""}
+        if book_content is None:
+            error_msg = book_id + "没有基本信息"
+            print(error_msg)
+            self.error.append(error_msg)
+        else:
+            for info in single_book_dict.keys():
+                match = re.search(info + r'(.*)$', book_content.text, re.M)
+                if match:
+                    single_book_dict[info] = match.group(1)
+            book_rating = soup.find('div', attrs={'class': "rating_self clearfix"}).find(
+                property='v:average').text.strip()
+            # catch data of "want to read/ have read/ be reading"
+            book_reading_data = soup.find('div', attrs={'id': 'collector'})
+            book_reading_data = book_reading_data.find_all("p", class_="pl")
+            number = []
+            for data in book_reading_data:
+                link = data.find("a")
+                if link:
+                    text = link.get_text()
+                    numbers = re.search(r'\d+', text)
+                    number.append(numbers.group())
         # single book info dictionary
         info = {"title": book_title, "author introduction": book_author_intro,
                 "content introduction": book_content_intro, "rating": book_rating,
-                "publish year": single_book_dict["出版年"].split(': ')[1],
-                "page num": single_book_dict["页数"].split(': ')[1],
-                "price": single_book_dict["定价"].split(': ')[1],
-                "wrapper": single_book_dict["装帧"].split(': ')[1],
-                "ISBN": single_book_dict["ISBN"].split(': ')[1],
+                "publish year": single_book_dict["出版年: "],
+                "page num": single_book_dict["页数: "],
+                "price": single_book_dict["定价: "],
+                "wrapper": single_book_dict["装帧: "],
+                "ISBN": single_book_dict["ISBN: "],
                 "be_reading": str(number[0]), "have_read": str(number[1]), "wanna_read": str(number[2])}
         # add to one single dictionary
         self.all_info[book_id] = info
         return info
+
+    def add_tag(self):
+        tag_path = '../Dataset/Tag/Book_tag_tmp.csv'
+        with open(tag_path, 'r', encoding='UTF-8') as f:
+            lines = f.readlines()
+            for line in lines:
+                tag = line.strip('\n').split(',')
+                print(tag)
+                self.all_info[tag[0]]['tag'] = tag[1].strip('"').split(',')
 
     def save_all_info_to_json(self):
         save_path = '../Result/Book_info.json'
@@ -99,5 +137,7 @@ class Book(Spider):
             if self.count % 20 == 0:
                 print("   ", time.ctime())
             time.sleep(random.uniform(0.5, 1))  # 休眠 0.5 ~ 1s
+
+        self.add_tag()
         self.save_all_info_to_json()
         self.save_error_message()
