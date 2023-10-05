@@ -14,11 +14,9 @@ if __name__ == "__main__":
     movie_spider = Movie(pre_url, movie_path, movie_headers)
     movie_spider.run()
 <<<<<<< HEAD
-    #
 =======
-
 >>>>>>> refs/remotes/origin/main
-    # del movie_spider
+    del movie_spider
     pre_url = "https://book.douban.com/subject/{}/"
     book_path = "../Dataset/Book_id_temp.csv"
     book_headers = {
