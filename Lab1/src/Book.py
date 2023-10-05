@@ -26,22 +26,25 @@ class Book(Spider):
         if len(book_intro) >= 2:
             if book_intro[0].text.find("(展开全部)") == -1:
                 book_content_intro = book_intro[0].text.replace('\n', '')
-                book_author_intro = book_intro[2].text.replace('\n', '')
-            else:
-                if len(book_intro[1].text.rstrip()) > len(book_intro[0].text.rstrip()):
-                    book_content_intro = book_intro[1].text.replace('\n', '')
+                if book_intro[1].text.find("(展开全部)") == -1:
+                    book_author_intro = book_intro[1].text.replace('\n', '')
                 else:
-                    book_content_intro = book_intro[0].text.replace('\n', '')
-                book_author_intro = book_intro[2].text.replace('\n', '')
-        else:
-            if len(book_intro[1].text.rstrip()) > len(book_intro[0].text.rstrip()):
-                book_content_intro = book_intro[1].text.replace('\n', '')
+                    book_author_intro = book_intro[2].text.replace('\n', '')
             else:
+                book_content_intro = book_intro[1].text.replace('\n', '')
+                if len(book_intro) == 2:
+                    book_author_intro = None
+                else:
+                    if book_intro[2].text.find("(展开全部)") == -1:
+                        book_author_intro = book_intro[2].text.replace('\n', '')
+                    else:
+                        book_author_intro = book_intro[3].text.replace('\n', '')
+        else:
                 book_content_intro = book_intro[0].text.replace('\n', '')
-            book_author_intro = None
+                book_author_intro = None
         # parse basic book info
         book_content = soup.find('div', attrs={'id': 'info'})
-        single_book_dict = {"作者": "", "出版社": "", "出版年": "", "页数": "", "定价": "", "装帧": "", "ISBN": ""}
+        single_book_dict = {"作者: ": "", "出版社: ": "", "出版年: ": "", "页数: ": "", "定价: ": "", "装帧: ": "", "ISBN: ": ""}
         for info in single_book_dict.keys():
             match = re.search(info + r'(.*)$', book_content.text, re.M)
             if match:
@@ -60,11 +63,11 @@ class Book(Spider):
         # single book info dictionary
         info = {"title": book_title, "author introduction": book_author_intro,
                 "content introduction": book_content_intro, "rating": book_rating,
-                "publish year": single_book_dict["出版年"].split(': ')[1],
-                "page num": single_book_dict["页数"].split(': ')[1],
-                "price": single_book_dict["定价"].split(': ')[1],
-                "wrapper": single_book_dict["装帧"].split(': ')[1],
-                "ISBN": single_book_dict["ISBN"].split(': ')[1],
+                "publish year": single_book_dict["出版年: "],
+                "page num": single_book_dict["页数: "],
+                "price": single_book_dict["定价: "],
+                "wrapper": single_book_dict["装帧: "],
+                "ISBN": single_book_dict["ISBN: "],
                 "be_reading": str(number[0]), "have_read": str(number[1]), "wanna_read": str(number[2])}
         # add to one single dictionary
         self.all_info[book_id] = info
@@ -84,7 +87,7 @@ class Book(Spider):
         book_url = self.create_url()
         for index, book_id in enumerate(self.book_id_list):
             self.count += 1
-            print(self.count, ". 正在爬取id为 {} 的电影的信息".format(book_id))
+            print(self.count, ". 正在爬取id为 {} 的书籍的信息".format(book_id))
             (text, status_code) = self.get_response(book_url[index], self.get_headers())
             (text, status_code) = self.get_response(book_url[index], self.cookie) if status_code == 404 else (
                 text, status_code)
@@ -95,9 +98,9 @@ class Book(Spider):
                 self.error.append(error_msg)
             else:
                 self.all_info[book_id] = self.parse_text(text, book_id)
-                print("    id为 {} 的电影的信息爬取完毕\n".format(book_id))
+                print("    id为 {} 的书籍的信息爬取完毕\n".format(book_id))
             if self.count % 20 == 0:
                 print("   ", time.ctime())
-            time.sleep(random.uniform(1.5, 2))  # 休眠 0.5 ~ 1s
+            time.sleep(random.uniform(0.5, 1))  # 休眠 0.5 ~ 1s
         self.save_all_info_to_json()
         self.save_error_message()
