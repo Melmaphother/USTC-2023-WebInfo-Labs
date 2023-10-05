@@ -113,7 +113,7 @@ class Movie(Spider):
                 if index != -1:
                     movie_id = line[0:index]
                     tag = line[index + 1:]
-                    print(movie_id, ' ', tag)
+                    # print(movie_id, ' ', tag)
                 self.all_info[movie_id]['tag'] = tag.strip('"').split(',')
 
     def save_all_info_to_json(self):
