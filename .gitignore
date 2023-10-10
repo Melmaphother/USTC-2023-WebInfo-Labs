@@ -1,9 +1,3 @@
 /.vscode
-/HWs
-<<<<<<< HEAD
-/Lab1/Dataset/*_temp.csv
-=======
 /Lab1/.vscode
 /Lab1/.idea
-/Lab1/src/__pycache__
->>>>>>> 4f326d929f01c350747b0dcf93a7a0fdf5bdb385
