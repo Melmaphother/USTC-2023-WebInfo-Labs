@@ -2,6 +2,7 @@ import jieba
 import json
 from typing import Dict, List
 import synonyms
+import re
 
 
 class Split:
@@ -33,7 +34,8 @@ class Split:
         return self.stop_word_list
 
     def split_info(self, text: str) -> List:
-        seg_list = jieba.lcut(text.replace('\r','').replace('\n','').replace(' ','').replace('\t','').strip(), cut_all=True)
+        pattern = '[^A-Za-z0-9\u4e00-\u9fa5]'
+        seg_list = jieba.lcut(re.sub(pattern, '', text), cut_all=True)
         extracted_word = []
         print(seg_list)
         for word in seg_list:
