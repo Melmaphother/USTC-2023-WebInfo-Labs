@@ -12,11 +12,11 @@ class BooleanMatch:
         self.info_mirror = {}
         self.inverted_table_mirror = {}
         # Load data
-        print("LOADING DATA!\nPlease wait for a few minutes!")
+        print("LOADING DATA!\nPlease wait for a few seconds!")
         self.book_info_path = '../../Stage1_1/Result/Book_info.json'
         self.movie_info_path = '../../Stage1_1/Result/Movie_info.json'
-        self.book_inverted_table_path = ''
-        self.movie_inverted_table_path = ''
+        self.book_inverted_table_path = '../../wzz/Stage1_2/inverted_list_temp.json'
+        self.movie_inverted_table_path = '../../wzz/Stage1_2/inverted_list_temp.json'
         with open(self.book_info_path, 'r', encoding="utf-8") as f_book_info:
             self.book_info = json.load(f_book_info)
 
@@ -45,6 +45,7 @@ class BooleanMatch:
         flag = 0
         while i < len(self.query_list) and not self.error:
             if flag < 0:
+                print("The right bracket overabundant!")
                 self.error = True
             elif self.query_list[i] == ')':
                 if flag == 0:
@@ -54,16 +55,26 @@ class BooleanMatch:
             elif self.query_list[i] == '(':
                 flag += 1
             i += 1
+        print("Lack of right bracket!")
         self.error = True
         return -1
 
-    def BooleanSearch(self, query: str, mode: str) -> bool:
+    def BooleanSearch(self, query: AnyStr, mode: AnyStr) -> bool:
         self.query = query
         self.mode = mode
         self.query_list = self.SplitQuery()
         self.info_mirror = {'book': self.book_info, 'movie': self.movie_info}
         self.inverted_table_mirror = {'book': self.book_inverted_table, 'movie': self.movie_inverted_table}
-        self.BracketOperation(self.query_list)
+        ret = self.BracketOperation(self.query_list)
+        if len(ret) != 1:
+            print("There are some unexpected words")
+            self.error = True
+        if not self.error:
+            expect_id_list = ret[0]
+            if not expect_id_list:
+                print("There are no results you want here. Search for something else?")
+            else:
+                print(expect_id_list)
         return self.error
 
     def BracketOperation(self, query_list) -> list:
@@ -83,45 +94,95 @@ class BooleanMatch:
                 elif item == 'AND' or item == 'OR' or item == 'NOT':
                     ret.append(item)
                 else:
-                    ret.append(self.inverted_table_mirror[self.mode][item] if item in self.inverted_table_mirror[
-                        self.mode].keys else [])
-
+                    inverted_table = self.inverted_table_mirror[self.mode]
+                    ret.append(inverted_table[item] if item in inverted_table.keys() else [])
+                index += 1
+            else:
+                break
         return self.LogicOperation(ret)
 
     def LogicOperation(self, ret: list) -> list:
         if 'OR' in ret:
-            or_list = ret.index('OR')
-            last_or_index = or_list[len(or_list) - 1]
-            return Operation.OR(self.LogicOperation(ret[: last_or_index + 1]), ret[last_or_index + 1:])
+            or_list = []
+            for loc, val in enumerate(ret):
+                if val == 'OR':
+                    or_list.append(loc)
+            last_or_index = or_list[-1]
+            return self.OR(self.LogicOperation(ret[: last_or_index]), ret[last_or_index + 1])
         elif 'AND' in ret:
-            and_list = ret.index('AND')
-            last_and_index = and_list[len(and_list) - 1]
-            return Operation.AND(self.LogicOperation(ret[: last_and_index + 1]), ret[last_and_index + 1:])
+            and_list = []
+            for loc, val in enumerate(ret):
+                if val == 'AND':
+                    and_list.append(loc)
+            last_and_index = and_list[-1]
+            return self.AND(self.LogicOperation(ret[: last_and_index]), ret[last_and_index + 1])
         elif 'NOT' in ret:
-            not_list = ret.index('NOT')
-            first_not_index = not_list[0]
-            return Operation.NOT(self.LogicOperation[ret[first_not_index + 1:]])
+            first_not_index = ret.index('NOT')
+            return self.NOT(self.LogicOperation(ret[first_not_index + 1:]))
         else:
-            return ret
+            return ret[0]
 
+    def OR(self, L1: List, L2: List) -> list:
+        ret = []
+        if not L1 or not L2:
+            print("The operand 'OR' lacks parameter!")
+            self.error = True
+        if not self.error:
+            index1 = 0
+            index2 = 0
+            while index1 < len(L1) and index2 < len(L2):
+                if L1[index1] == L2[index2]:
+                    ret.append(L1[index1])
+                    index1 += 1
+                    index2 += 1
+                elif L1[index1] < L2[index2]:
+                    ret.append(L1[index1])
+                    index1 += 1
+                else:
+                    ret.append(L2[index2])
+                    index2 += 1
+            if index1 < len(L1):
+                ret.append(L1[index1:])
+            if index2 < len(L2):
+                ret.append(L2[index2:])
+        return ret
 
-class Operation:
+    def AND(self, L1: List, L2: List) -> list:
+        ret = []
+        if not L1 or not L2:
+            print("The operand 'AND' lacks parameter!")
+            self.error = True
+        if not self.error:
+            index1 = 0
+            index2 = 0
+            while index1 < len(L1) and index2 < len(L2):
+                if L1[index1] == L2[index2]:
+                    ret.append(L1[index1])
+                    index1 += 1
+                    index2 += 1
+                elif L1[index1] < L2[index2]:
+                    index1 += 1
+                else:
+                    index2 += 1
+        return ret
 
-    def OR(self, L1: list, L2: List) -> list:
-        pass
-
-    def AND(self, L1: list, L2: list) -> list:
-        pass
-
-    def NOT(self, L: list) -> list:
-        pass
+    def NOT(self, L: List) -> list:
+        ret = []
+        if not L:
+            print("The operand 'NOT' lacks parameter!")
+            self.error = True
+        if not self.error:
+            info = self.info_mirror[self.mode]
+            ret = [x for x in info.key() not in L]
+        return ret
 
 
 if __name__ == '__main__':
     bm = BooleanMatch()
     while True:
         while True:
-            mode = input("Please input which mode you'll search: book / movie?\n")
+            mode = input(
+                "Please input which mode you'll search: book / movie?\n")
             if mode == 'book' or mode == 'movie':
                 break
             else:
