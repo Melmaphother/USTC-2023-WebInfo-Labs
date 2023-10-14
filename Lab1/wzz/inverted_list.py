@@ -5,6 +5,8 @@ def invert(dict):
             inverted_list[dict[key]].append(key)
         else:
             inverted_list[dict[key]] = [key]
+    for key in dict:
+        inverted_list[dict[key]].sort()
     return inverted_list
 
 if __name__ == "__main__":
