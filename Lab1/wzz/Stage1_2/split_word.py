@@ -63,9 +63,9 @@ class Split:
 
 
 if __name__ == "__main__":
-    path1 = "./book_temp.json"
+    path1 = "./data/book_temp.json"
     path2 = "../../Stage1_2/chinese_dictionary/cn_stopwords.txt"
-    path3 = "./book_temp.csv"
+    path3 = "./data/book_temp.csv"
     book_test = Split(path3, path1, path2)
     book_test.get_id_list()
     book_test.get_full_info()

@@ -1,8 +1,7 @@
-from typing import Dict, List
-import numpy
+import json
 import bisect
 
-class revert_list:
+class revert_dict:
     def revert(self):
         for key in self.dict:            
             for item in self.dict[key]:          #key:id item:str(name) 
@@ -14,30 +13,42 @@ class revert_list:
                 else:
                     self.reverted_dict[item] = [key]
 
-
     def __init__(self,dict):
         self.dict = dict
         self.reverted_dict = {}
         self.revert()
 
-class skip_node:
-    def __init__(self,id_,next_node,down):
-        self.id = id_
-        self.down = down
-        self.next_node = next_node
+class Skip_revert_list(revert_dict):            #继承倒排表
 
-class Skip_revert_list(revert_list):
     def __init__(self,dict):
         self.dict = dict
-        revert_list.__init__(self,dict)
+        revert_dict.__init__(self,dict)
+        self.length = {}            #键：字符串     值：倒排表长度
         self.interval = {}          #键：字符串     值：跳表间隔
-        self.skip_list = {}         #键：字符串     值：List，由一系列跳表节点组成的列表
+        self.skip_dict = {}         #键：字符串     值：List，由一系列跳表节点组成的列表
+        self.list_head = {}         #键：字符串     值：skip_node对象
     
-    def cal_interval(self,reverted_dict):
-        for id_ in reverted_dict:
-            self.interval[id_] = (len(self.reverted_dict[id_])) ** 0.5
+    def create_skip_list(self,word):
+        self.length[word] = len(self.reverted_dict[word])
+        self.interval[word] = int((self.length[word]) ** 0.5)
+        self.list_head[word] = (int(self.reverted_dict[word][0]), self.interval[word], 0)
+        self.skip_dict[word] = [self.list_head[word]]
+        for i in range(self.interval[word],self.length[word],self.interval[word]):
+            node = (int(self.reverted_dict[word][i]), i + self.interval[word], i)
+            self.skip_dict[word].append(node)
 
-    def skip_list(self):
-        pass
-    #node = skip_node(id_,next_node,down)
-    pass
+    def create_skip_dict(self):
+        for key in self.reverted_dict.keys():
+            self.create_skip_list(key)
+
+        
+if __name__ == "__main__":
+    with open(r"D:\web_lab\WebInfo\Lab1\wzz\Stage1_2\data\book_participle.json","r",encoding="UTF-8") as fin:
+        reverted_dict = json.load(fin)
+    skip = Skip_revert_list(reverted_dict)
+    skip.create_skip_dict()
+    print(skip.reverted_dict)
+    print ("\n\n\n\n")
+    print(skip.skip_dict)
+    with open(r"D:\web_lab\WebInfo\Lab1\wzz\Stage1_2\data\skip_dict_temp.json","w",encoding="UTF-8") as fout:
+        json.dump(skip.skip_dict,fout, indent=4, ensure_ascii=False)
