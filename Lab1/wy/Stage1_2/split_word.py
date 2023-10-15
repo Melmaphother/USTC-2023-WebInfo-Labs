@@ -6,10 +6,11 @@ import re
 
 
 class Split:
-    def __init__(self, id_path, info_path, stop_word_path):
+    def __init__(self, id_path, info_path, stop_word_path, result_path):
         self.id_path = id_path
         self.info_path = info_path
         self.stop_word_path = stop_word_path
+        self.result_path = result_path
         self.full_info = {}
         self.single_id_info = []
         self.id_list = []
@@ -54,14 +55,20 @@ class Split:
 
     def combine_single_info(self, id__: str) -> Dict:
         self.extracted_info[id__] = self.single_id_info
+        self.single_id_info = []
         return self.extracted_info
+
+    def save_keyword_to_json(self):
+        with open(self.result_path, 'w', encoding="UTF-8") as f:
+            json.dump(self.extracted_info, f, indent=4, ensure_ascii=False)
 
 
 if __name__ == "__main__":
     path1 = "./Result/Book_info.json"
     path2 = "./Dataset/cn_stopwords.txt"
     path3 = "./Dataset/Book_id.csv"
-    book_test = Split(path3, path1, path2)
+    path4 = "./Result/Book_keyword.json"
+    book_test = Split(path3, path1, path2, path4)
     book_test.get_id_list()
     book_test.get_full_info()
     book_test.get_stop_word_list()
@@ -71,3 +78,4 @@ if __name__ == "__main__":
         book_test.split_info(book_test.full_info[id_]['content introduction'])
         book_test.combine_single_info(id_)
     print(book_test.extracted_info)
+    book_test.save_keyword_to_json()
