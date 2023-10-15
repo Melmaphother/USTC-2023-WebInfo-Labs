@@ -3,6 +3,7 @@ import json
 from typing import Dict, List
 import synonyms
 import re
+import pkuseg
 
 
 class Split:
@@ -34,9 +35,13 @@ class Split:
             self.stop_word_list = [word.strip('\n') for word in f.readlines()]
         return self.stop_word_list
 
-    def split_info(self, text: str) -> List:
+    # can choose two modes to split the words
+    def split_info(self, text: str, mode="jieba") -> List:
         pattern = '[^A-Za-z0-9\u4e00-\u9fa5]'
-        seg_list = jieba.lcut(re.sub(pattern, '', text), cut_all=True)
+        if mode == "jieba":
+            seg_list = jieba.lcut(re.sub(pattern, '', text), cut_all=False)
+        else:
+            seg_list = pkuseg.pkuseg().cut(re.sub(pattern, '', text))
         extracted_word = []
         print(seg_list)
         for word in seg_list:
@@ -73,9 +78,9 @@ if __name__ == "__main__":
     book_test.get_full_info()
     book_test.get_stop_word_list()
     for id_ in book_test.id_list:
-        book_test.split_info(book_test.full_info[id_]['title'])
-        book_test.split_info(book_test.full_info[id_]['author introduction'])
-        book_test.split_info(book_test.full_info[id_]['content introduction'])
+        book_test.split_info(book_test.full_info[id_]['title'], "pku")
+        book_test.split_info(book_test.full_info[id_]['author introduction'], "pku")
+        book_test.split_info(book_test.full_info[id_]['content introduction'], "pku")
+        print(book_test.single_id_info)
         book_test.combine_single_info(id_)
-    print(book_test.extracted_info)
     book_test.save_keyword_to_json()
