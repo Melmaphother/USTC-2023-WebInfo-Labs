@@ -27,21 +27,20 @@ class Skip_revert_list(revert_dict):            #继承倒排表
         self.interval = {}          #键：字符串     值：跳表间隔
         self.skip_dict = {}         #键：字符串     值：List，由一系列跳表节点组成的列表
         self.list_head = {}         #键：字符串     值：skip_node对象
+        self.create_skip_dict()
     
     def create_skip_list(self,word):
         self.length[word] = len(self.reverted_dict[word])
         self.interval[word] = int((self.length[word]) ** 0.5)
-        self.list_head[word] = (int(self.reverted_dict[word][0]), self.interval[word], 0)
+        self.list_head[word] = ((self.reverted_dict[word][0]), self.interval[word] if self.length[word]>1 else 0 , 0)
         self.skip_dict[word] = [self.list_head[word]]
-        for i in range(self.interval[word],self.length[word],self.interval[word]):
-            node = (int(self.reverted_dict[word][i]), i + self.interval[word], i)       #(value,next,down)
+        for i in range(self.interval[word], self.length[word] - self.interval[word], self.interval[word]):
+            node = ((self.reverted_dict[word][i]), i + self.interval[word], i)       #(value,next,down)
             self.skip_dict[word].append(node)
-
     def create_skip_dict(self):
         for key in self.reverted_dict.keys():
             self.create_skip_list(key)
 
-        
 if __name__ == "__main__":
     with open(r"D:\web_lab\WebInfo\Lab1\wy\Stage1_2\Result\Book_keyword.json","r",encoding="UTF-8") as fin:
         participle_dict = json.load(fin)
