@@ -1,4 +1,4 @@
-from typing import AnyStr, List
+from typing import AnyStr, List, Tuple
 import json
 
 output_len = 80
@@ -11,15 +11,20 @@ class BooleanMatch:
         self.query_cache_list = []
         self.mode = ""
         self.error = False
-        self.info_mirror = {}
-        self.inverted_table_mirror = {}
+        self.info = {}  # info of the mode (Stage1_1)
+        self.inverted_table = {}  # inverted table of the mode (Stage1_2)
+        self.skip_list = {}  # skip list of the mode (Stage1_2)
+
         # Load data
         print("Douban Searching Engine\n".center(output_len))
         print("LOADING DATA! Please wait for a few seconds!\n".center(output_len))
         self.book_info_path = '../../Stage1_1/Result/Book_info.json'
         self.movie_info_path = '../../Stage1_1/Result/Movie_info.json'
-        self.book_inverted_table_path = '../../wzz/Stage1_2/data/reverted_dict_temp.json'
-        self.movie_inverted_table_path = '../../wzz/Stage1_2/data/reverted_dict_temp.json'
+        self.book_inverted_table_path = '../../wzz/Stage1_2/data/reverted_dict.json'
+        self.movie_inverted_table_path = '../../wzz/Stage1_2/data/reverted_dict.json'
+        self.book_skip_list_path = '../../wzz/Stage1_2/data/skip_dict.json'
+        self.movie_skip_list_path = '../../wzz/Stage1_2/data/skip_dict.json'
+
         with open(self.book_info_path, 'r', encoding="utf-8") as f_book_info:
             self.book_info = json.load(f_book_info)
 
@@ -31,6 +36,12 @@ class BooleanMatch:
 
         with open(self.movie_inverted_table_path, 'r', encoding="utf-8") as f_movie_inverted_table:
             self.movie_inverted_table = json.load(f_movie_inverted_table)
+
+        with open(self.book_skip_list_path, 'r', encoding="utf-8") as f_book_skip_list:
+            self.book_skip_list = json.load(f_book_skip_list)
+
+        with open(self.movie_skip_list_path, 'r', encoding="utf-8") as f_movie_skip_list:
+            self.movie_skip_list = json.load(f_movie_skip_list)
 
         print("Initialization completed! Start you travel!\n".center(output_len))
 
@@ -62,23 +73,35 @@ class BooleanMatch:
         self.error = True
         return -1
 
+    def CreateSkipList(self, L: List) -> List:
+        if len(L) == 0:
+            self.error = True
+        interval = int(len(L) ** 0.5)
+        skip_list = [(L[0], 0 if len(L) == 1 else interval, 0)]  # avoid len(L) == 1
+        for i in range(interval, len(L) - interval, interval):
+            skip_list.append((L[i], i + interval, i))
+        return skip_list
+
     def BooleanSearch(self, query: AnyStr, mode: AnyStr) -> bool:
         self.query = query
         self.mode = mode
         self.query_list = self.SplitQuery()
-        self.info_mirror = {'book': self.book_info, 'movie': self.movie_info}
-        self.inverted_table_mirror = {'book': self.book_inverted_table, 'movie': self.movie_inverted_table}
+        self.info = self.book_info if mode == 'book' else self.movie_info
+        self.inverted_table = self.book_inverted_table if mode == 'book' else self.movie_inverted_table
+        self.skip_list = self.book_skip_list if mode == 'book' else self.movie_skip_list
+
         ret = self.BracketOperation(self.query_list)
         if len(ret) == 0:
             print("Sorry! But there are no results you want here.\n".center(output_len))
             # not find doesn't mean error
         if not self.error:
-            print(ret)
+            ret_id_list = ret[0]
+            print(ret_id_list)
         return self.error
 
-    def BracketOperation(self, query_list) -> List:
+    def BracketOperation(self, query_list: List) -> Tuple:
         if not query_list:
-            return []
+            return [], []
         ret = []
         index = 0
         while index < len(query_list):
@@ -96,15 +119,17 @@ class BooleanMatch:
                     ret.append(item)
                     index += 1
                 else:
-                    inverted_table = self.inverted_table_mirror[self.mode]
-                    ret.append(inverted_table[item] if item in inverted_table.keys() else [])
+                    item_id_list = self.inverted_table[item] if item in self.inverted_table.keys() else []
+                    item_skip_list = self.skip_list[item] if item in self.skip_list.keys() else []
+                    item_id_list_and_skip_list = (item_id_list, item_skip_list)
+                    ret.append(item_id_list_and_skip_list)
                     index += 1
             else:
                 break
         logic_ret = self.LogicOperation(ret)
         return logic_ret
 
-    def LogicOperation(self, ret: list) -> List:
+    def LogicOperation(self, ret: List) -> Tuple:
         if 'OR' in ret:
             or_list = []
             for loc, val in enumerate(ret):
@@ -140,73 +165,103 @@ class BooleanMatch:
                 self.error = True
             return ret[0]
 
-    def OR(self, L1: List, L2: List) -> List:
+    def OR(self, T1: Tuple, T2: Tuple) -> Tuple:
         ret = []
-        if not L1 or not L2:
+        L1_id_list = T1[0]
+        L1_skip_list = T1[1]
+        L2_id_list = T2[0]
+        L2_skip_list = T2[1]
+
+        if not L1_id_list or not L2_id_list:
             print("The operand 'OR' lacks parameter!\n".center(output_len))
             self.error = True
         if not self.error:
             index1 = 0
             index2 = 0
-            while index1 < len(L1) and index2 < len(L2):
-                if L1[index1] == L2[index2]:
-                    ret.append(L1[index1])
+            while index1 < len(L1_id_list) and index2 < len(L2_id_list):
+                if L1_id_list[index1] == L2_id_list[index2]:
+                    ret.append(L1_id_list[index1])
                     index1 += 1
                     index2 += 1
-                elif L1[index1] < L2[index2]:
-                    ret.append(L1[index1])
+                elif L1_id_list[index1] < L2_id_list[index2]:
+                    ret.append(L1_id_list[index1])
                     index1 += 1
                 else:
-                    ret.append(L2[index2])
+                    ret.append(L2_id_list[index2])
                     index2 += 1
-            if index1 < len(L1):
-                ret.append(L1[index1:])
-            if index2 < len(L2):
-                ret.append(L2[index2:])
-        return ret
+            if index1 < len(L1_id_list):
+                ret.extend(L1_id_list[index1:])
+            if index2 < len(L2_id_list):
+                ret.extend(L2_id_list[index2:])
+        return ret, self.CreateSkipList(ret)
 
-    def AND(self, L1: List, L2: List) -> List:
+    def AND(self, T1: Tuple, T2: Tuple) -> Tuple:
         ret = []
-        if not L1 or not L2:
+        L1_id_list = T1[0]
+        L1_skip_list = T1[1]
+        L2_id_list = T2[0]
+        L2_skip_list = T2[1]
+        if not L1_id_list or not L2_id_list:
             print("The operand 'AND' lacks parameter!\n".center(output_len))
             self.error = True
         if not self.error:
             index1 = 0
             index2 = 0
-            while index1 < len(L1) and index2 < len(L2):
-                if L1[index1] == L2[index2]:
-                    ret.append(L1[index1])
+            len_1 = len(L1_id_list)
+            len_2 = len(L2_id_list)
+            interval_1 = int((len(L1_id_list)) ** 0.5)
+            interval_2 = int((len(L2_id_list)) ** 0.5)
+            while index1 < len_1 and index2 < len_2:
+                # try_skip
+                if index1 % interval_1 == 0 and index1 < len_1 - interval_1:  # index1 should skip
+                    if L1_id_list[index1] < L2_id_list[index2] and L1_skip_list[index1 // interval_1 + 1][0] < \
+                            L2_id_list[index2]:
+                        index1 = L1_skip_list[index1 // interval_1][1]
+                if index2 % interval_2 == 0 and index2 < len_2 - interval_2:  # index2 should skip
+                    if L2_id_list[index2] < L1_id_list[index1] and L2_skip_list[index2 // interval_1 + 1][0] < \
+                            L1_id_list[index1]:
+                        index2 = L2_skip_list[index2 // interval_2][1]
+
+                if L1_id_list[index1] == L2_id_list[index2]:
+                    ret.append(L1_id_list[index1])
                     index1 += 1
                     index2 += 1
-                elif L1[index1] < L2[index2]:
+                elif L1_id_list[index1] < L2_id_list[index2]:
                     index1 += 1
                 else:
                     index2 += 1
-        return ret
+        return ret, self.CreateSkipList(ret)
 
-    def AND_NOT(self, L1: List, L2: List) -> List:
+    def AND_NOT(self, T1: Tuple, T2: Tuple) -> Tuple:
         ret = []
-        if not L2:
+        L1_id_list = T1[0]
+        L1_skip_list = T1[1]
+        L2_id_list = T2[0]
+        L2_skip_list = T2[1]
+
+        if not L2_id_list:
             print("The operand 'NOT' lacks parameter!\n".center(output_len))
             self.error = True
         if not self.error:
-            for x in L1:
-                if x not in L2:
+            for x in L1_id_list:
+                if x not in L2_id_list:
                     ret.append(x)
-        return ret
+        return ret, self.CreateSkipList(ret)
 
-    def NOT(self, L: List) -> list:
+    def NOT(self, T: Tuple) -> Tuple:
         ret = []
-        if not L:
+        L_id_list = T[0]
+        L_skip_list = T[1]
+        if not L_id_list:
             print("The operand 'NOT' lacks parameter!\n".center(output_len))
             self.error = True
         if not self.error:
-            info = self.info_mirror[self.mode]
+            info = self.info[self.mode]
             for x in info.keys():
-                if x not in L:
+                if x not in L_id_list:
                     ret.append(x)
         ret.sort()
-        return ret
+        return ret, self.CreateSkipList(ret)
 
 
 if __name__ == '__main__':
