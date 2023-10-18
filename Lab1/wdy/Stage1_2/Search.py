@@ -190,9 +190,9 @@ class BooleanMatch:
                     ret.append(L2_id_list[index2])
                     index2 += 1
             if index1 < len(L1_id_list):
-                ret.append(L1_id_list[index1:])
+                ret.extend(L1_id_list[index1:])
             if index2 < len(L2_id_list):
-                ret.append(L2_id_list[index2:])
+                ret.extend(L2_id_list[index2:])
         return ret, self.CreateSkipList(ret)
 
     def AND(self, T1: Tuple, T2: Tuple) -> Tuple:
