@@ -37,6 +37,10 @@ class Skip_revert_list(revert_dict):            #继承倒排表
         for i in range(self.interval[word], self.length[word] - self.interval[word], self.interval[word]):
             node = ((self.reverted_dict[word][i]), i + self.interval[word], i)       #(value,next,down)
             self.skip_dict[word].append(node)
+        last = len(self.skip_dict[word])*self.interval[word]
+        if last < len(self.reverted_dict[word]):
+            node = ((self.reverted_dict[word][last-1]),len(self.reverted_dict[word])-1,last-1)
+            self.skip_dict[word].append(node)
     def create_skip_dict(self):
         for key in self.reverted_dict.keys():
             self.create_skip_list(key)
