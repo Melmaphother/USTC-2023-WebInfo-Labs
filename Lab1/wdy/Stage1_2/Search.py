@@ -14,6 +14,7 @@ class BooleanMatch:
         self.info = {}  # info of the mode (Stage1_1)
         self.inverted_table = {}  # inverted table of the mode (Stage1_2)
         self.skip_list = {}  # skip list of the mode (Stage1_2)
+        self.pre_sort_ids = ()
 
         # Load data
         print("Douban Searching Engine\n".center(output_len))
@@ -76,11 +77,16 @@ class BooleanMatch:
     def CreateSkipList(self, L: List) -> List:
         if len(L) == 0:
             self.error = True
-        interval = int(len(L) ** 0.5)
-        skip_list = [(L[0], 0 if len(L) == 1 else interval, 0)]  # avoid len(L) == 1
-        for i in range(interval, len(L) - interval, interval):
-            skip_list.append((L[i], i + interval, i))
-        return skip_list
+            return []
+        if not self.error:
+            interval = int(len(L) ** 0.5)
+            skip_list = [(L[0], 0 if len(L) == 1 else interval, 0)]  # avoid len(L) == 1
+            for i in range(interval, len(L) - interval, interval):
+                skip_list.append((L[i], i + interval, i))
+            last = len(skip_list) * interval
+            if last < len(L):
+                skip_list.append(((L[last - 1]), len(L) - 1, last - 1))
+            return skip_list
 
     def BooleanSearch(self, query: AnyStr, mode: AnyStr) -> bool:
         self.query = query
@@ -89,6 +95,9 @@ class BooleanMatch:
         self.info = self.book_info if mode == 'book' else self.movie_info
         self.inverted_table = self.book_inverted_table if mode == 'book' else self.movie_inverted_table
         self.skip_list = self.book_skip_list if mode == 'book' else self.movie_skip_list
+        pre_sort_id_list = list(self.info.keys())
+        pre_sort_id_list.sort()
+        self.pre_sort_ids = (pre_sort_id_list, self.CreateSkipList(pre_sort_id_list))
 
         ret = self.BracketOperation(self.query_list)
         if len(ret) == 0:
@@ -97,6 +106,7 @@ class BooleanMatch:
         if not self.error:
             ret_id_list = ret[0]
             print(ret_id_list)
+
         return self.error
 
     def BracketOperation(self, query_list: List) -> Tuple:
@@ -127,6 +137,7 @@ class BooleanMatch:
             else:
                 break
         logic_ret = self.LogicOperation(ret)
+
         return logic_ret
 
     def LogicOperation(self, ret: List) -> Tuple:
@@ -168,17 +179,45 @@ class BooleanMatch:
     def OR(self, T1: Tuple, T2: Tuple) -> Tuple:
         ret = []
         L1_id_list = T1[0]
-        L1_skip_list = T1[1]
         L2_id_list = T2[0]
+        L1_skip_list = T1[1]
         L2_skip_list = T2[1]
-
         if not L1_id_list or not L2_id_list:
             print("The operand 'OR' lacks parameter!\n".center(output_len))
             self.error = True
-        if not self.error:
+        else:
             index1 = 0
             index2 = 0
+            len_1 = len(L1_id_list)
+            len_2 = len(L2_id_list)
+            interval_1 = int((len(L1_id_list)) ** 0.5)
+            interval_2 = int((len(L2_id_list)) ** 0.5)
             while index1 < len(L1_id_list) and index2 < len(L2_id_list):
+                while index1 % interval_1 == 0 and index1 < len_1 - interval_1:  # index1 should skip
+                    if L1_id_list[index1] == L2_id_list[index2] and L1_skip_list[index1 // interval_1 + 1][0] == \
+                            L2_id_list[index2]:
+                        ret.extend(L1_id_list[index1: index1 + interval_1])
+                        index1 += interval_1
+                        index2 += 1
+                    elif L1_id_list[index1] < L2_id_list[index2] and L1_skip_list[index1 // interval_1 + 1][0] < \
+                            L2_id_list[index2]:
+                        ret.extend(L1_id_list[index1: index1 + interval_1])
+                        index1 += interval_1
+                    else:
+                        break  # fail skip
+                while index2 % interval_2 == 0 and index2 < len_2 - interval_2:  # index2 should skip
+                    if L2_id_list[index2] == L1_id_list[index1] and L2_skip_list[index2 // interval_2 + 1][0] == \
+                            L1_id_list[index1]:
+                        ret.extend(L2_id_list[index2: index2 + interval_2])
+                        index2 += interval_2
+                        index1 += 1
+                    elif L2_id_list[index2] < L1_id_list[index1] and L2_skip_list[index2 // interval_2 + 1][0] < \
+                            L1_id_list[index1]:
+                        ret.extend(L2_id_list[index2: index2 + interval_2])
+                        index2 += interval_2
+                    else:
+                        break  # fail skip
+
                 if L1_id_list[index1] == L2_id_list[index2]:
                     ret.append(L1_id_list[index1])
                     index1 += 1
@@ -189,10 +228,12 @@ class BooleanMatch:
                 else:
                     ret.append(L2_id_list[index2])
                     index2 += 1
+
             if index1 < len(L1_id_list):
                 ret.extend(L1_id_list[index1:])
             if index2 < len(L2_id_list):
                 ret.extend(L2_id_list[index2:])
+
         return ret, self.CreateSkipList(ret)
 
     def AND(self, T1: Tuple, T2: Tuple) -> Tuple:
@@ -213,14 +254,18 @@ class BooleanMatch:
             interval_2 = int((len(L2_id_list)) ** 0.5)
             while index1 < len_1 and index2 < len_2:
                 # try_skip
-                if index1 % interval_1 == 0 and index1 < len_1 - interval_1:  # index1 should skip
+                while index1 % interval_1 == 0 and index1 < len_1 - interval_1:  # index1 should skip
                     if L1_id_list[index1] < L2_id_list[index2] and L1_skip_list[index1 // interval_1 + 1][0] < \
                             L2_id_list[index2]:
                         index1 = L1_skip_list[index1 // interval_1][1]
-                if index2 % interval_2 == 0 and index2 < len_2 - interval_2:  # index2 should skip
+                    else:
+                        break
+                while index2 % interval_2 == 0 and index2 < len_2 - interval_2:  # index2 should skip
                     if L2_id_list[index2] < L1_id_list[index1] and L2_skip_list[index2 // interval_1 + 1][0] < \
                             L1_id_list[index1]:
                         index2 = L2_skip_list[index2 // interval_2][1]
+                    else:
+                        break
 
                 if L1_id_list[index1] == L2_id_list[index2]:
                     ret.append(L1_id_list[index1])
@@ -230,54 +275,83 @@ class BooleanMatch:
                     index1 += 1
                 else:
                     index2 += 1
+
         return ret, self.CreateSkipList(ret)
 
     def AND_NOT(self, T1: Tuple, T2: Tuple) -> Tuple:
         ret = []
         L1_id_list = T1[0]
-        L1_skip_list = T1[1]
         L2_id_list = T2[0]
+        L1_skip_list = T1[1]
         L2_skip_list = T2[1]
-
-        if not L2_id_list:
+        if not L1_id_list or not L2_id_list:
             print("The operand 'NOT' lacks parameter!\n".center(output_len))
             self.error = True
-        if not self.error:
-            for x in L1_id_list:
-                if x not in L2_id_list:
-                    ret.append(x)
+        else:
+            index1 = 0
+            index2 = 0
+            len_1 = len(L1_id_list)
+            len_2 = len(L2_id_list)
+            interval_1 = int((len(L1_id_list)) ** 0.5)
+            interval_2 = int((len(L2_id_list)) ** 0.5)
+            while index1 < len(L1_id_list) and index2 < len(L2_id_list):
+                while index1 % interval_1 == 0 and index1 < len_1 - interval_1:  # index1 should skip
+                    if L1_id_list[index1] == L2_id_list[index2] and L1_skip_list[index1 // interval_1 + 1][0] == \
+                            L2_id_list[index2]:
+                        ret.extend(L1_id_list[index1: index1 + interval_1])
+                        index1 += interval_1
+                        index2 += 1
+                    elif L1_id_list[index1] < L2_id_list[index2] and L1_skip_list[index1 // interval_1 + 1][0] < \
+                            L2_id_list[index2]:
+                        ret.extend(L1_id_list[index1: index1 + interval_1])
+                        index1 += interval_1
+                    else:
+                        break  # fail skip
+                while index2 % interval_2 == 0 and index2 < len_2 - interval_2:  # index2 should skip
+                    if L2_id_list[index2] == L1_id_list[index1] and L2_skip_list[index2 // interval_2 + 1][0] == \
+                            L1_id_list[index1]:
+                        ret.extend(L2_id_list[index2: index2 + interval_2])
+                        index2 += interval_2
+                        index1 += 1
+                    elif L2_id_list[index2] < L1_id_list[index1] and L2_skip_list[index2 // interval_2 + 1][0] < \
+                            L1_id_list[index1]:
+                        ret.extend(L2_id_list[index2: index2 + interval_2])
+                        index2 += interval_2
+                    else:
+                        break  # fail skip
+
+                if L1_id_list[index1] == L2_id_list[index2]:
+                    index1 += 1
+                    index2 += 1
+                elif L1_id_list[index1] < L2_id_list[index2]:
+                    ret.append(L1_id_list[index1])
+                    index1 += 1
+                else:
+                    index2 += 1
+
+            if index1 < len(L1_id_list):
+                ret.extend(L1_id_list[index1:])
+
         return ret, self.CreateSkipList(ret)
 
     def NOT(self, T: Tuple) -> Tuple:
-        ret = []
-        L_id_list = T[0]
-        L_skip_list = T[1]
-        if not L_id_list:
-            print("The operand 'NOT' lacks parameter!\n".center(output_len))
-            self.error = True
-        if not self.error:
-            info = self.info[self.mode]
-            for x in info.keys():
-                if x not in L_id_list:
-                    ret.append(x)
-        ret.sort()
-        return ret, self.CreateSkipList(ret)
+        return self.AND_NOT(self.pre_sort_ids, T)
 
 
 if __name__ == '__main__':
     bm = BooleanMatch()
     while True:
         while True:
-            mode = input(
+            user_mode = input(
                 "Please input which mode you'll search: book / movie?\n".center(output_len))
-            if mode == 'book' or mode == 'movie':
+            if user_mode == 'book' or user_mode == 'movie':
                 break
             else:
                 print("Some error! Please be care that you can only choose 'book' or 'movie'!\n".center(output_len))
 
-        query = input("Please input the sequence you'll search:\n".center(output_len))
+        user_query = input("Please input the sequence you'll search:\n".center(output_len))
 
-        error = bm.BooleanSearch(query, mode)
+        error = bm.BooleanSearch(user_query, user_mode)
 
         if error:
             next_choice = input("Maybe search for something else? y / n?\n".center(output_len))
@@ -289,3 +363,4 @@ if __name__ == '__main__':
             break
 
 # （一部）And Not NOt动人
+# (一部）And NOt动人
