@@ -37,10 +37,10 @@ class Split:
 
     # can choose two modes to split the words
     def split_info(self, text: str, mode="jieba") -> List:
-        # pattern = '[^A-Za-z0-9\u4e00-\u9fa5]'
+        pattern = '[^A-Za-z0-9\u4e00-\u9fa5]'
         if mode == "jieba":
-            # seg_list = jieba.lcut(re.sub(pattern, '', text), cut_all=False)
-            seg_list = jieba.lcut(text, cut_all=False)
+            seg_list = jieba.lcut(re.sub(pattern, '', text), cut_all=False)
+            # seg_list = jieba.lcut(text, cut_all=False)
         else:
             # seg_list = pkuseg.pkuseg().cut(re.sub(pattern, '', text))
             seg_list = pkuseg.pkuseg().cut(text)
