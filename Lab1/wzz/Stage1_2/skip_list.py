@@ -6,12 +6,10 @@ class revert_dict:
         for key in self.dict:            
             for item in self.dict[key]:          #key:id item:str(name) 
                 if item in self.reverted_dict:
-                    index = bisect.bisect_left(self.reverted_dict[item],key)
-                    if index != len(self.reverted_dict[item]) and self.reverted_dict[item][index] == key:       #保证不会将重复的id加入词项中
-                        continue
-                    bisect.insort(self.reverted_dict[item],key) #将key有序插入到列表中
+                    index = bisect.bisect_left(self.reverted_dict[item],int(key))
+                    bisect.insort(self.reverted_dict[item],int(key)) #将key有序插入到列表中
                 else:
-                    self.reverted_dict[item] = [key]
+                    self.reverted_dict[item] = [int(key)]
 
     def __init__(self,dict):
         self.dict = dict
