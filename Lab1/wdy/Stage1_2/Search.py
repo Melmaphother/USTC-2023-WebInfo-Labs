@@ -1,8 +1,6 @@
 from typing import AnyStr, List, Tuple
 import json
-
-output_len = 80
-
+import colorama
 
 class BooleanMatch:
     def __init__(self):
@@ -17,8 +15,8 @@ class BooleanMatch:
         self.pre_sort_ids = ()
 
         # Load data
-        print("Douban Searching Engine\n".center(output_len))
-        print("LOADING DATA! Please wait for a few seconds!\n".center(output_len))
+        print('*' * 10 + " Douban Searching Engine " + '*' * 10)
+        print('*' * 10+ " LOADING DATA! Please wait for a few seconds! " + '*' * 10)
         self.book_info_path = '../../Stage1_1/Result/Book_info.json'
         self.movie_info_path = '../../Stage1_1/Result/Movie_info.json'
         self.book_inverted_table_path = '../../wzz/Stage1_2/data/reverted_dict.json'
@@ -44,7 +42,7 @@ class BooleanMatch:
         with open(self.movie_skip_list_path, 'r', encoding="utf-8") as f_movie_skip_list:
             self.movie_skip_list = json.load(f_movie_skip_list)
 
-        print("Initialization completed! Start you travel!\n".center(output_len))
+        print("Initialization completed! Start you travel!")
 
     def SplitQuery(self) -> List:
         self.query = self.query.strip()
@@ -60,7 +58,7 @@ class BooleanMatch:
         flag = 0
         while i < len(self.query_list) and not self.error:
             if flag < 0:
-                print("The right bracket overabundant!\n".center(output_len))
+                print("The right bracket overabundant!")
                 self.error = True
             elif self.query_list[i] == ')':
                 if flag == 0:
@@ -70,7 +68,7 @@ class BooleanMatch:
             elif self.query_list[i] == '(':
                 flag += 1
             i += 1
-        print("Lack of right bracket!\n".center(output_len))
+        print("Lack of right bracket!")
         self.error = True
         return -1
 
@@ -101,7 +99,7 @@ class BooleanMatch:
 
         ret = self.BracketOperation(self.query_list)
         if len(ret) == 0:
-            print("Sorry! But there are no results you want here.\n".center(output_len))
+            print("Sorry! But there are no results you want here.")
             # not find doesn't mean error
         if not self.error:
             ret_id_list = ret[0]
@@ -169,10 +167,10 @@ class BooleanMatch:
                 return self.NOT(self.LogicOperation(ret[first_not_index + 1:]))
         else:
             if not self.error and len(ret) == 0:
-                print("Lack of some parameters\n".center(output_len))
+                print("Lack of some parameters")
                 self.error = True
             elif not self.error and len(ret) > 1:
-                print("There are some unexpected parameters\n".center(output_len))
+                print("There are some unexpected parameters")
                 self.error = True
             return ret[0]
 
@@ -183,7 +181,7 @@ class BooleanMatch:
         L1_skip_list = T1[1]
         L2_skip_list = T2[1]
         if not L1_id_list or not L2_id_list:
-            print("The operand 'OR' lacks parameter!\n".center(output_len))
+            print("The operand 'OR' lacks parameter!")
             self.error = True
         else:
             index1 = 0
@@ -243,7 +241,7 @@ class BooleanMatch:
         L2_id_list = T2[0]
         L2_skip_list = T2[1]
         if not L1_id_list or not L2_id_list:
-            print("The operand 'AND' lacks parameter!\n".center(output_len))
+            print("The operand 'AND' lacks parameter!")
             self.error = True
         if not self.error:
             index1 = 0
@@ -285,7 +283,7 @@ class BooleanMatch:
         L1_skip_list = T1[1]
         L2_skip_list = T2[1]
         if not L1_id_list or not L2_id_list:
-            print("The operand 'NOT' lacks parameter!\n".center(output_len))
+            print("The operand 'NOT' lacks parameter!")
             self.error = True
         else:
             index1 = 0
@@ -343,23 +341,23 @@ if __name__ == '__main__':
     while True:
         while True:
             user_mode = input(
-                "Please input which mode you'll search: book / movie?\n".center(output_len))
+                "Please input which mode you'll search: book / movie?")
             if user_mode == 'book' or user_mode == 'movie':
                 break
             else:
-                print("Some error! Please be care that you can only choose 'book' or 'movie'!\n".center(output_len))
+                print("Some error! Please be care that you can only choose 'book' or 'movie'!")
 
-        user_query = input("Please input the sequence you'll search:\n".center(output_len))
+        user_query = input("Please input the sequence you'll search:")
 
         error = bm.BooleanSearch(user_query, user_mode)
 
         if error:
-            next_choice = input("Maybe search for something else? y / n?\n".center(output_len))
+            next_choice = input("Maybe search for something else? y / n?")
         else:
-            next_choice = input("Would you still like to search: y / n?\n".center(output_len))
+            next_choice = input("Would you still like to search: y / n?")
 
         if next_choice == 'n':
-            print("Thank you for using this searching engine! Welcome your next travel!".center(output_len))
+            print("Thank you for using this searching engine! Welcome your next travel!")
             break
 
 # （一部）And Not NOt动人
