@@ -44,11 +44,11 @@ class Skip_revert_list(revert_dict):            #继承倒排表
             self.create_skip_list(key)
 
 if __name__ == "__main__":
-    with open(r"D:\web_lab\WebInfo\Lab1\wy\Stage1_2\Result\Book_keyword.json","r",encoding="UTF-8") as fin:
+    with open(r"D:\web_lab\WebInfo\Lab1\wy\Stage1_2\Result\Movie_keyword.json","r",encoding="UTF-8") as fin:
         participle_dict = json.load(fin)
     skip = Skip_revert_list(participle_dict)
     skip.create_skip_dict()
-    with open(r"D:\web_lab\WebInfo\Lab1\wzz\Stage1_2\data\reverted_dict.json","w",encoding="UTF-8") as fout_reverted_dict:
+    with open(r"D:\web_lab\WebInfo\Lab1\wzz\Stage1_2\data\Movie_reverted_dict.json","w",encoding="UTF-8") as fout_reverted_dict:
         json.dump(skip.reverted_dict,fout_reverted_dict, indent=4, ensure_ascii=False)
-    with open(r"D:\web_lab\WebInfo\Lab1\wzz\Stage1_2\data\skip_dict.json","w",encoding="UTF-8") as fout_skip_dict:
+    with open(r"D:\web_lab\WebInfo\Lab1\wzz\Stage1_2\data\Movie_skip_dict.json","w",encoding="UTF-8") as fout_skip_dict:
         json.dump(skip.skip_dict,fout_skip_dict, indent=4, ensure_ascii=False)
