@@ -1,4 +1,4 @@
-from typing import AnyStr, List, Tuple
+from typing import AnyStr, List, Tuple, Dict
 import json
 from colorama import Fore
 
@@ -11,7 +11,7 @@ class BooleanMatch:
         self.mode = ""
         self.error = False
         self.info = {}  # info of the mode (Stage1_1)
-        self.inverted_table = {}  # inverted table of the mode (Stage1_2)
+        self.reverted_dict = {}  # inverted table of the mode (Stage1_2)
         self.skip_list = {}  # skip list of the mode (Stage1_2)
         self.pre_sort_ids = ()
 
@@ -20,10 +20,10 @@ class BooleanMatch:
         print(Fore.RED + '*' * 12 + " LOADING DATA! Please wait for a few seconds! " + '*' * 12)
         self.book_info_path = '../../Stage1_1/Result/Book_info.json'
         self.movie_info_path = '../../Stage1_1/Result/Movie_info.json'
-        self.book_inverted_table_path = '../../wzz/Stage1_2/data/Book_reverted_dict.json'
-        self.movie_inverted_table_path = '../../wzz/Stage1_2/data/Movie_reverted_dict.json'
-        self.book_skip_list_path = '../../wzz/Stage1_2/data/Book_skip_dict.json'
-        self.movie_skip_list_path = '../../wzz/Stage1_2/data/Movie_skip_dict.json'
+        self.book_reverted_dict_compress_path = '../Dataset/Book_reverted_dict_compressed.bin'
+        self.book_vocabulary = 'Dataset/Book_vocabulary.txt'
+        self.movie_reverted_dict_compress_path = '../Dataset/Movie_reverted_dict_compressed.bin'
+        self.movie_vocabulary = 'Dataset/Movie_vocabulary.txt'
 
         with open(self.book_info_path, 'r', encoding="utf-8") as f_book_info:
             self.book_info = json.load(f_book_info)
@@ -31,21 +31,12 @@ class BooleanMatch:
         with open(self.movie_info_path, 'r', encoding="utf-8") as f_movie_info:
             self.movie_info = json.load(f_movie_info)
 
-        with open(self.book_inverted_table_path, 'r', encoding="utf-8") as f_book_inverted_table:
-            self.book_inverted_table = json.load(f_book_inverted_table)
-
-        with open(self.movie_inverted_table_path, 'r', encoding="utf-8") as f_movie_inverted_table:
-            self.movie_inverted_table = json.load(f_movie_inverted_table)
-
-        with open(self.book_skip_list_path, 'r', encoding="utf-8") as f_book_skip_list:
-            self.book_skip_list = json.load(f_book_skip_list)
-
-        with open(self.movie_skip_list_path, 'r', encoding="utf-8") as f_movie_skip_list:
-            self.movie_skip_list = json.load(f_movie_skip_list)
+        self.book_reverted_dict = self.decompress(self.book_reverted_dict_compress_path, self.book_vocabulary)
+        self.movie_reverted_dict = self.decompress(self.movie_reverted_dict_compress_path, self.movie_vocabulary)
 
         print(Fore.BLUE + '*' * 12 + " Initialization completed! Start you travel! " + '*' * 13 + '\n')
 
-    def decompress(self, compress_path, word_list_path):
+    def decompress(self, compress_path, word_list_path) -> Dict:
         with open(compress_path, 'rb') as f_compress:
             contents_bytes = f_compress.read()
             contents_list = []
@@ -61,7 +52,6 @@ class BooleanMatch:
 
         with open(word_list_path, 'r', encoding='UTF-8') as f_word:
             word_list = f_word.readlines()
-
         index = 0
         inverted_table = {}
         id_list = []
@@ -69,7 +59,7 @@ class BooleanMatch:
         while index < len(word_list):
             word_and_num = word_list[index].strip().split('%')
             if len(word_and_num) != 2:
-                print(word_and_num)
+                self.error = True
                 break
             word = word_and_num[0]
             num = int(word_and_num[1])
@@ -155,8 +145,8 @@ class BooleanMatch:
         self.mode = mode
         self.query_list = self.SplitQuery()
         self.info = self.book_info if mode == 'book' else self.movie_info
-        self.inverted_table = self.book_inverted_table if mode == 'book' else self.movie_inverted_table
-        self.skip_list = self.book_skip_list if mode == 'book' else self.movie_skip_list
+        self.reverted_dict = self.book_reverted_dict if mode == 'book' else self.movie_reverted_dict
+        # self.skip_list = self.book_skip_list if mode == 'book' else self.movie_skip_list
         pre_sort_id_list = list(self.info.keys())
         pre_sort_id_list.sort()
         self.pre_sort_ids = (pre_sort_id_list, self.CreateSkipList(pre_sort_id_list))
@@ -193,8 +183,8 @@ class BooleanMatch:
                     ret.append(item)
                     index += 1
                 else:
-                    item_id_list = self.inverted_table[item] if item in self.inverted_table.keys() else []
-                    item_skip_list = self.skip_list[item] if item in self.skip_list.keys() else []
+                    item_id_list = self.reverted_dict[item] if item in self.reverted_dict.keys() else []
+                    item_skip_list = self.CreateSkipList(item_id_list)
                     item_id_list_and_skip_list = (item_id_list, item_skip_list)
                     ret.append(item_id_list_and_skip_list)
                     index += 1
@@ -241,7 +231,6 @@ class BooleanMatch:
             if not self.error:
                 return ret[0]
             else:
-                print(ret)
                 return [], []
 
     def OR(self, T1: Tuple, T2: Tuple) -> Tuple:
@@ -430,8 +419,3 @@ if __name__ == '__main__':
             print(
                 Fore.BLUE + "Thank you for using this searching engine! Welcome your next travel!")
             break
-
-# 一场 AND not NOt 谋杀案
-# 一部 and 动人心弦
-# 挪威And 森林
-# 功夫 and not 喜剧
