@@ -18,8 +18,8 @@ class BooleanMatch:
         # Load data
         print(Fore.BLUE + '*' * 22 + " Douban Searching Engine " + '*' * 23)
         print(Fore.RED + '*' * 12 + " LOADING DATA! Please wait for a few seconds! " + '*' * 12)
-        self.book_info_path = '../../Stage1_1/Result/Book_info.json'
-        self.movie_info_path = '../../Stage1_1/Result/Movie_info.json'
+        self.book_info_path = '../Stage1_1/Result/Book_info.json'
+        self.movie_info_path = '../Stage1_1/Result/Movie_info.json'
         self.book_reverted_dict_compress_path = 'Dataset/Book_reverted_dict_compressed.bin'
         self.book_vocabulary = 'Dataset/Book_vocabulary.txt'
         self.movie_reverted_dict_compress_path = 'Dataset/Movie_reverted_dict_compressed.bin'
@@ -231,7 +231,6 @@ class BooleanMatch:
             if not self.error:
                 return ret[0]
             else:
-                print(ret)
                 return [], []
 
     def OR(self, T1: Tuple, T2: Tuple) -> Tuple:
@@ -420,8 +419,3 @@ if __name__ == '__main__':
             print(
                 Fore.BLUE + "Thank you for using this searching engine! Welcome your next travel!")
             break
-
-# 一场 AND not NOt 谋杀案
-# 一部 and 动人心弦
-# 挪威And 森林
-# 功夫 and not 喜剧
