@@ -1,13 +1,14 @@
 import json
 def compress(index_list)->bytes:
     count = 0
-    vb_arr = []        #可变长度编码对应的列表（最后转换成bytes类）
+    vb_arr = []                                     #可变长度编码对应的列表（最后转换成bytes类）
     prev = len(index_list)-2
-    for i in range(len(index_list)-1,0,-1):    #index_list:若干个长的id
+
+    for i in range(len(index_list)-1,0,-1):         #用文档间距替代id
         index_list[i] = index_list[i] - index_list[prev]
         prev -=1
         
-    for i in range(0,len(index_list)-1):
+    for i in range(0,len(index_list)):            #index_list:若干个长的id
         reverted_arr = []
         while index_list[i] >= 128 :
             mod = index_list[i]%128
@@ -18,7 +19,9 @@ def compress(index_list)->bytes:
         reverted_arr[0] = int(reverted_arr[0])+128
         for j in range(len(reverted_arr)-1,-1,-1):           #倒着遍历
             vb_arr.append(reverted_arr[j])
-    return bytes(vb_arr)
+        pass
+    result = bytes(vb_arr)
+    return result
 
 if __name__ == "__main__":
     with open(r"D:\web_lab\WebInfo\Lab1\wzz\Stage1_2\data\Movie_reverted_dict.json","r",encoding="UTF-8" ) as f_in:
