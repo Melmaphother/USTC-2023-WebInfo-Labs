@@ -47,16 +47,24 @@ class BooleanMatch:
 
     def message(self, _id: int):
         if self.mode == 'book':
-            print(Fore.GREEN + str(_id), end='')
-            print(' ' * 20, end='')
-            print(Fore.BLACK + "message")
-            pass
+            show_id = str(_id) + ' ' * (17 - len(str(_id)))
+            show_author = "author: " + self.book_info[str(_id)]["author"]
+            show_author = show_author + ' ' * (30 - len(show_author)) if len(show_author) < 30 else ' '
+            show_content = "content: " + self.book_info[str(_id)]["content introduction"]
+            print(Fore.GREEN + show_id, end='')
+            print(Fore.BLACK + show_author, end='')
+            print(Fore.BLACK + show_content)
         else:
-            print(Fore.GREEN + str(_id), end='')
-            print(' ' * 20, end='')
-            print(Fore.BLACK + "message")
-            pass
-        pass
+            show_id = str(_id) + ' ' * (17 - len(str(_id)))
+            show_name = "movie name: " + self.movie_info[str(_id)]["name"]
+            show_name = show_name + ' ' * (30 - len(show_name)) if len(show_name) < 30 else ' '
+            show_director = "director: " + '、'.join(self.movie_info[str(_id)]["director"])
+            show_director = show_director + ' ' * (30 - len(show_director)) if len(show_director) < 30 else ' '
+            show_content = "content: " + self.movie_info[str(_id)]['intro']
+            print(Fore.GREEN + show_id, end='')
+            print(Fore.BLACK + show_name, end='')
+            print(Fore.BLACK + show_director, end='')
+            print(Fore.BLACK + show_content)
 
     def SplitQuery(self) -> List:
         self.query = self.query.strip()
