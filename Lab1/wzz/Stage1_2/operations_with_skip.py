@@ -130,7 +130,7 @@ def AND(T1: Tuple, T2: Tuple) -> list:
                 else:
                     break
             while index2 % interval_2 == 0 and index2 < len_2 - interval_2:     #index2有跳表指针
-                if L2[index2] < L1[index1] and Skip_2[index2 // interval_1 + 1][0] < L1[index1]:
+                if L2[index2] < L1[index1] and Skip_2[index2 // interval_2 + 1][0] < L1[index1]:
                     index2 = Skip_2[index2 // interval_2][1]
                 else:
                     break
