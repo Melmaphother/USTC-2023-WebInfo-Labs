@@ -30,6 +30,6 @@ if __name__ == "__main__":
     with open(r"D:\web_lab\WebInfo\Lab1\wzz\Stage1_2\data\Book_reverted_dict_compressed.bin","wb") as f_bin:
         with open(r"D:\web_lab\WebInfo\Lab1\wzz\Stage1_2\data\Book_vacabulary.txt","w",encoding="UTF-8") as f_txt:
             for key in reverted_dict:
-                f_txt.write(key + ":%" + str(len(reverted_dict[key])) + "\n")
+                f_txt.write(key + "%" + str(len(reverted_dict[key])) + "\n")
                 reverted_dict[key] = compress(reverted_dict[key])
                 f_bin.write(reverted_dict[key])
