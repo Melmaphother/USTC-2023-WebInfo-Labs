@@ -45,6 +45,48 @@ class BooleanMatch:
 
         print(Fore.BLUE + '*' * 12 + " Initialization completed! Start you travel! " + '*' * 13 + '\n')
 
+    def decompress(self, compress_path, word_list_path):
+        with open(compress_path, 'rb') as f_compress:
+            contents_bytes = f_compress.read()
+            contents_list = []
+            content_list = []
+            for byte in contents_bytes:
+                if byte >> 7 == 0:
+                    content_list.append(byte)
+                else:
+                    content_list.append(byte & 0x7f)
+                    contents_list.append(content_list)
+                    del content_list
+                    content_list = []  # 不能用 content.clear()
+
+        with open(word_list_path, 'r', encoding='UTF-8') as f_word:
+            word_list = f_word.readlines()
+
+        index = 0
+        inverted_table = {}
+        id_list = []
+        content_index = 0
+        while index < len(word_list):
+            word_and_num = word_list[index].strip().split('%')
+            if len(word_and_num) != 2:
+                print(word_and_num)
+                break
+            word = word_and_num[0]
+            num = int(word_and_num[1])
+            for i in range(num):
+                id_bytes = contents_list[content_index + i]
+                id_ = 0
+                for j in range(0, len(id_bytes)):
+                    id_ += id_bytes[len(id_bytes) - 1 - j] << j * 7
+                id_ += id_list[i - 1] if id_list else 0
+                id_list.append(id_)
+            inverted_table[word] = id_list
+            content_index += num
+            index += 1
+            del id_list
+            id_list = []
+        return inverted_table
+
     def message(self, _id: int):
         if self.mode == 'book':
             show_id = str(_id) + ' ' * (17 - len(str(_id)))
@@ -57,7 +99,7 @@ class BooleanMatch:
         else:
             show_id = str(_id) + ' ' * (17 - len(str(_id)))
             show_name = "movie name: " + self.movie_info[str(_id)]["name"]
-            show_name = show_name + ' ' * (30 - len(show_name)) if len(show_name) < 30 else ' '
+            show_name = show_name + ' ' * (40 - len(show_name)) if len(show_name) < 40 else ' '
             show_director = "director: " + '、'.join(self.movie_info[str(_id)]["director"])
             show_director = show_director + ' ' * (30 - len(show_director)) if len(show_director) < 30 else ' '
             show_content = "content: " + self.movie_info[str(_id)]['intro']
@@ -100,12 +142,12 @@ class BooleanMatch:
             return []
         if not self.error:
             interval = int(len(L) ** 0.5)
-            skip_list = [(L[0], 0 if len(L) == 1 else interval, 0)]  # avoid len(L) == 1
+            skip_list = [[L[0], 0 if len(L) == 1 else interval, 0]]  # avoid len(L) == 1
             for i in range(interval, len(L) - interval, interval):
-                skip_list.append((L[i], i + interval, i))
+                skip_list.append([L[i], i + interval, i])
             last = len(skip_list) * interval
-            if last < len(L):
-                skip_list.append(((L[last - 1]), len(L) - 1, last - 1))
+            if last < len(L) - 1:
+                skip_list.append([(L[last]), len(L) - 1, last])
             return skip_list
 
     def BooleanSearch(self, query: AnyStr, mode: AnyStr) -> bool:
@@ -220,24 +262,24 @@ class BooleanMatch:
             interval_2 = int((len(L2_id_list)) ** 0.5)
             while index1 < len(L1_id_list) and index2 < len(L2_id_list):
                 while index1 % interval_1 == 0 and index1 < len_1 - interval_1:  # index1 should skip
-                    if L1_id_list[index1] == L2_id_list[index2] and L1_skip_list[index1 // interval_1 + 1][0] == \
+                    if L1_id_list[index1] == L2_id_list[index2] and L1_id_list[L1_skip_list[index1 // interval_1][1]] == \
                             L2_id_list[index2]:
                         ret.extend(L1_id_list[index1: index1 + interval_1])
                         index1 += interval_1
                         index2 += 1
-                    elif L1_id_list[index1] < L2_id_list[index2] and L1_skip_list[index1 // interval_1 + 1][0] < \
+                    elif L1_id_list[index1] < L2_id_list[index2] and L1_id_list[L1_skip_list[index1 // interval_1][1]] < \
                             L2_id_list[index2]:
                         ret.extend(L1_id_list[index1: index1 + interval_1])
                         index1 += interval_1
                     else:
                         break  # fail skip
                 while index2 % interval_2 == 0 and index2 < len_2 - interval_2:  # index2 should skip
-                    if L2_id_list[index2] == L1_id_list[index1] and L2_skip_list[index2 // interval_2 + 1][0] == \
+                    if L2_id_list[index2] == L1_id_list[index1] and L2_id_list[L2_skip_list[index2 // interval_2][1]] == \
                             L1_id_list[index1]:
                         ret.extend(L2_id_list[index2: index2 + interval_2])
                         index2 += interval_2
                         index1 += 1
-                    elif L2_id_list[index2] < L1_id_list[index1] and L2_skip_list[index2 // interval_2 + 1][0] < \
+                    elif L2_id_list[index2] < L1_id_list[index1] and L2_id_list[L2_skip_list[index2 // interval_2][1]] < \
                             L1_id_list[index1]:
                         ret.extend(L2_id_list[index2: index2 + interval_2])
                         index2 += interval_2
@@ -281,13 +323,13 @@ class BooleanMatch:
             while index1 < len_1 and index2 < len_2:
                 # try_skip
                 while index1 % interval_1 == 0 and index1 < len_1 - interval_1:  # index1 should skip
-                    if L1_id_list[index1] < L2_id_list[index2] and L1_skip_list[index1 // interval_1 + 1][0] < \
+                    if L1_id_list[index1] < L2_id_list[index2] and L1_id_list[L1_skip_list[index1 // interval_1][1]] < \
                             L2_id_list[index2]:
                         index1 = L1_skip_list[index1 // interval_1][1]
                     else:
                         break
                 while index2 % interval_2 == 0 and index2 < len_2 - interval_2:  # index2 should skip
-                    if L2_id_list[index2] < L1_id_list[index1] and L2_skip_list[index2 // interval_2 + 1][0] < \
+                    if L2_id_list[index2] < L1_id_list[index1] and L2_id_list[L2_skip_list[index2 // interval_2][1]] < \
                             L1_id_list[index1]:
                         index2 = L2_skip_list[index2 // interval_2][1]
                     else:
@@ -322,24 +364,24 @@ class BooleanMatch:
             interval_2 = int((len(L2_id_list)) ** 0.5)
             while index1 < len(L1_id_list) and index2 < len(L2_id_list):
                 while index1 % interval_1 == 0 and index1 < len_1 - interval_1:  # index1 should skip
-                    if L1_id_list[index1] == L2_id_list[index2] and L1_skip_list[index1 // interval_1 + 1][0] == \
+                    if L1_id_list[index1] == L2_id_list[index2] and L1_id_list[L1_skip_list[index1 // interval_1][1]] == \
                             L2_id_list[index2]:
                         ret.extend(L1_id_list[index1: index1 + interval_1])
                         index1 += interval_1
                         index2 += 1
-                    elif L1_id_list[index1] < L2_id_list[index2] and L1_skip_list[index1 // interval_1 + 1][0] < \
+                    elif L1_id_list[index1] < L2_id_list[index2] and L1_id_list[L1_skip_list[index1 // interval_1][1]] < \
                             L2_id_list[index2]:
                         ret.extend(L1_id_list[index1: index1 + interval_1])
                         index1 += interval_1
                     else:
                         break  # fail skip
                 while index2 % interval_2 == 0 and index2 < len_2 - interval_2:  # index2 should skip
-                    if L2_id_list[index2] == L1_id_list[index1] and L2_skip_list[index2 // interval_2 + 1][0] == \
+                    if L2_id_list[index2] == L1_id_list[index1] and L2_id_list[L2_skip_list[index2 // interval_2][1]] == \
                             L1_id_list[index1]:
                         ret.extend(L2_id_list[index2: index2 + interval_2])
                         index2 += interval_2
                         index1 += 1
-                    elif L2_id_list[index2] < L1_id_list[index1] and L2_skip_list[index2 // interval_2 + 1][0] < \
+                    elif L2_id_list[index2] < L1_id_list[index1] and L2_id_list[L2_skip_list[index2 // interval_2][1]] < \
                             L1_id_list[index1]:
                         ret.extend(L2_id_list[index2: index2 + interval_2])
                         index2 += interval_2
@@ -389,6 +431,7 @@ if __name__ == '__main__':
                 Fore.BLUE + "Thank you for using this searching engine! Welcome your next travel!")
             break
 
-# （一部）And Not NOt动人
-# (一部）And NOt动人
+# 一场 AND not NOt 谋杀案
+# 一部 and 动人心弦
 # 挪威And 森林
+# 功夫 and not 喜剧
