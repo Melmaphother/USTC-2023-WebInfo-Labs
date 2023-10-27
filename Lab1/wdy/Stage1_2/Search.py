@@ -188,7 +188,11 @@ class BooleanMatch:
             elif not self.error and len(ret) > 1:
                 print(Fore.RED + "There are some unexpected parameters")
                 self.error = True
-            return ret[0]
+            if not self.error:
+                return ret[0]
+            else:
+                print(ret)
+                return [], []
 
     def OR(self, T1: Tuple, T2: Tuple) -> Tuple:
         ret = []
@@ -275,7 +279,7 @@ class BooleanMatch:
                     else:
                         break
                 while index2 % interval_2 == 0 and index2 < len_2 - interval_2:  # index2 should skip
-                    if L2_id_list[index2] < L1_id_list[index1] and L2_skip_list[index2 // interval_1 + 1][0] < \
+                    if L2_id_list[index2] < L1_id_list[index1] and L2_skip_list[index2 // interval_2 + 1][0] < \
                             L1_id_list[index1]:
                         index2 = L2_skip_list[index2 // interval_2][1]
                     else:
@@ -379,3 +383,4 @@ if __name__ == '__main__':
 
 # （一部）And Not NOt动人
 # (一部）And NOt动人
+# 挪威And 森林
