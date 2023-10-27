@@ -1,6 +1,7 @@
 from typing import AnyStr, List, Tuple
 import json
-import colorama
+from colorama import Fore
+
 
 class BooleanMatch:
     def __init__(self):
@@ -15,14 +16,14 @@ class BooleanMatch:
         self.pre_sort_ids = ()
 
         # Load data
-        print('*' * 10 + " Douban Searching Engine " + '*' * 10)
-        print('*' * 10+ " LOADING DATA! Please wait for a few seconds! " + '*' * 10)
+        print(Fore.BLUE + '*' * 22 + " Douban Searching Engine " + '*' * 23)
+        print(Fore.RED + '*' * 12 + " LOADING DATA! Please wait for a few seconds! " + '*' * 12)
         self.book_info_path = '../../Stage1_1/Result/Book_info.json'
         self.movie_info_path = '../../Stage1_1/Result/Movie_info.json'
-        self.book_inverted_table_path = '../../wzz/Stage1_2/data/reverted_dict.json'
-        self.movie_inverted_table_path = '../../wzz/Stage1_2/data/reverted_dict.json'
-        self.book_skip_list_path = '../../wzz/Stage1_2/data/skip_dict.json'
-        self.movie_skip_list_path = '../../wzz/Stage1_2/data/skip_dict.json'
+        self.book_inverted_table_path = '../../wzz/Stage1_2/data/Book_reverted_dict.json'
+        self.movie_inverted_table_path = '../../wzz/Stage1_2/data/Movie_reverted_dict.json'
+        self.book_skip_list_path = '../../wzz/Stage1_2/data/Book_skip_dict.json'
+        self.movie_skip_list_path = '../../wzz/Stage1_2/data/Movie_skip_dict.json'
 
         with open(self.book_info_path, 'r', encoding="utf-8") as f_book_info:
             self.book_info = json.load(f_book_info)
@@ -42,7 +43,20 @@ class BooleanMatch:
         with open(self.movie_skip_list_path, 'r', encoding="utf-8") as f_movie_skip_list:
             self.movie_skip_list = json.load(f_movie_skip_list)
 
-        print("Initialization completed! Start you travel!")
+        print(Fore.BLUE + '*' * 12 + " Initialization completed! Start you travel! " + '*' * 13 + '\n')
+
+    def message(self, _id: int):
+        if self.mode == 'book':
+            print(Fore.GREEN + str(_id), end='')
+            print(' ' * 20, end='')
+            print(Fore.BLACK + "message")
+            pass
+        else:
+            print(Fore.GREEN + str(_id), end='')
+            print(' ' * 20, end='')
+            print(Fore.BLACK + "message")
+            pass
+        pass
 
     def SplitQuery(self) -> List:
         self.query = self.query.strip()
@@ -97,13 +111,15 @@ class BooleanMatch:
         pre_sort_id_list.sort()
         self.pre_sort_ids = (pre_sort_id_list, self.CreateSkipList(pre_sort_id_list))
 
-        ret = self.BracketOperation(self.query_list)
+        ret, ret_skip_list = self.BracketOperation(self.query_list)
         if len(ret) == 0:
-            print("Sorry! But there are no results you want here.")
-            # not find doesn't mean error
-        if not self.error:
-            ret_id_list = ret[0]
-            print(ret_id_list)
+            print(Fore.RED + "Sorry! But there are no results you want here.")
+            # not find doesn't mean error, but doesn't need to output
+        elif not self.error:
+            print(Fore.BLUE + '*' * 50)
+            for _id in ret:
+                self.message(_id)
+            print(Fore.BLUE + '*' * 50)
 
         return self.error
 
@@ -167,10 +183,10 @@ class BooleanMatch:
                 return self.NOT(self.LogicOperation(ret[first_not_index + 1:]))
         else:
             if not self.error and len(ret) == 0:
-                print("Lack of some parameters")
+                print(Fore.RED + "Lack of some parameters")
                 self.error = True
             elif not self.error and len(ret) > 1:
-                print("There are some unexpected parameters")
+                print(Fore.RED + "There are some unexpected parameters")
                 self.error = True
             return ret[0]
 
@@ -181,7 +197,7 @@ class BooleanMatch:
         L1_skip_list = T1[1]
         L2_skip_list = T2[1]
         if not L1_id_list or not L2_id_list:
-            print("The operand 'OR' lacks parameter!")
+            print(Fore.RED + "The operand 'OR' lacks parameter!")
             self.error = True
         else:
             index1 = 0
@@ -241,7 +257,7 @@ class BooleanMatch:
         L2_id_list = T2[0]
         L2_skip_list = T2[1]
         if not L1_id_list or not L2_id_list:
-            print("The operand 'AND' lacks parameter!")
+            print(Fore.RED + "The operand 'AND' lacks parameter!")
             self.error = True
         if not self.error:
             index1 = 0
@@ -283,7 +299,7 @@ class BooleanMatch:
         L1_skip_list = T1[1]
         L2_skip_list = T2[1]
         if not L1_id_list or not L2_id_list:
-            print("The operand 'NOT' lacks parameter!")
+            print(Fore.RED + "The operand 'NOT' lacks parameter!")
             self.error = True
         else:
             index1 = 0
@@ -340,24 +356,25 @@ if __name__ == '__main__':
     bm = BooleanMatch()
     while True:
         while True:
-            user_mode = input(
-                "Please input which mode you'll search: book / movie?")
+            user_mode = input(Fore.BLACK +
+                              "Please input which mode you'll search: " + Fore.GREEN + "book / movie? ")
             if user_mode == 'book' or user_mode == 'movie':
                 break
             else:
-                print("Some error! Please be care that you can only choose 'book' or 'movie'!")
+                print(Fore.RED + "Some error! Please be care that you can only choose 'book' or 'movie'!")
 
-        user_query = input("Please input the sequence you'll search:")
+        user_query = input(Fore.BLACK + "Please input the sequence you'll search: ")
 
         error = bm.BooleanSearch(user_query, user_mode)
 
         if error:
-            next_choice = input("Maybe search for something else? y / n?")
+            next_choice = input(Fore.BLACK + "Maybe search for something else?" + Fore.GREEN + "[Y/n] ")
         else:
-            next_choice = input("Would you still like to search: y / n?")
+            next_choice = input(Fore.BLACK + "Continue?" + Fore.GREEN + "[Y/n] ")
 
         if next_choice == 'n':
-            print("Thank you for using this searching engine! Welcome your next travel!")
+            print(
+                Fore.BLUE + "Thank you for using this searching engine! Welcome your next travel!")
             break
 
 # （一部）And Not NOt动人
