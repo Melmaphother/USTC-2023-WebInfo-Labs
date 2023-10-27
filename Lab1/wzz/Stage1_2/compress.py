@@ -24,11 +24,11 @@ def compress(index_list)->bytes:
     return result
 
 if __name__ == "__main__":
-    with open(r"D:\web_lab\WebInfo\Lab1\wzz\Stage1_2\data\Movie_reverted_dict.json","r",encoding="UTF-8" ) as f_in:
+    with open(r"D:\web_lab\WebInfo\Lab1\wzz\Stage1_2\data\Book_reverted_dict.json","r",encoding="UTF-8" ) as f_in:
         reverted_dict = json.load(f_in)
         
-    with open(r"D:\web_lab\WebInfo\Lab1\wzz\Stage1_2\data\Movie_reverted_dict_compressed.bin","wb") as f_bin:
-        with open(r"D:\web_lab\WebInfo\Lab1\wzz\Stage1_2\data\Movie_vacabulary.txt","w",encoding="UTF-8") as f_txt:
+    with open(r"D:\web_lab\WebInfo\Lab1\wzz\Stage1_2\data\Book_reverted_dict_compressed.bin","wb") as f_bin:
+        with open(r"D:\web_lab\WebInfo\Lab1\wzz\Stage1_2\data\Book_vacabulary.txt","w",encoding="UTF-8") as f_txt:
             for key in reverted_dict:
                 f_txt.write(key + ":" + str(len(reverted_dict[key])) + "\n")
                 reverted_dict[key] = compress(reverted_dict[key])
