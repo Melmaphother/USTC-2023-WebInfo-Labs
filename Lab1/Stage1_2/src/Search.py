@@ -21,9 +21,9 @@ class BooleanMatch:
         self.book_info_path = '../../Stage1_1/Result/Book_info.json'
         self.movie_info_path = '../../Stage1_1/Result/Movie_info.json'
         self.book_reverted_dict_compress_path = '../Dataset/Book_reverted_dict_compressed.bin'
-        self.book_vocabulary = 'Dataset/Book_vocabulary.txt'
+        self.book_vocabulary = '../Dataset/Book_vocabulary.txt'
         self.movie_reverted_dict_compress_path = '../Dataset/Movie_reverted_dict_compressed.bin'
-        self.movie_vocabulary = 'Dataset/Movie_vocabulary.txt'
+        self.movie_vocabulary = '../Dataset/Movie_vocabulary.txt'
 
         with open(self.book_info_path, 'r', encoding="utf-8") as f_book_info:
             self.book_info = json.load(f_book_info)
