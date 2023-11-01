@@ -231,7 +231,6 @@ class BooleanMatch:
             if not self.error:
                 return ret[0]
             else:
-                print(ret)
                 return [], []
 
     def OR(self, T1: Tuple, T2: Tuple) -> Tuple:
