@@ -1,18 +1,26 @@
-def __getitem__(self, index):
-    row = self.data.iloc[index]
-    user = self.user_to_idx[row['User']]
-    book = self.book_to_idx[row['Book']]
-    rating = row['Rate'].astype('float32')
+class BookRatingDataset(Dataset):
+    def __init__(self, data, user_to_idx, book_to_idx, tag_embedding_dict):
+        self.data = data
+        self.user_to_idx = user_to_idx
+        self.book_to_idx = book_to_idx
+        self.tag_embedding_dict = tag_embedding_dict
+        self.data['Time'] = self.data['Time'].astype(str)
+        self.data['Time'] = self.data['Time'].apply(lambda x: x.split('+')[0].replace('-','').replace('T', '').replace(':', '') if isinstance(x, str) else x)
+        self.data['Time'] = self.data['Time'].astype('int64')
+        self.time_max = self.data['Time'].max()
+        self.time_min = self.data['Time'].min()
+        self.data['Time'] = self.data['Time'].apply(lambda x:((x - self.time_min) / (self.time_max - self.time_min) + 1) / 2)
+        self.data['Time'] = self.data['Time'].astype('float32')
+        
+    def __len__(self):
+        return len(self.data)
 
-    time = row['Time'].astype(str)    # 转成 str 类型
-    time = time.apply(lambda x: x.split('+')[0].replace('-', '').replace(
-        'T', '').replace(':', '') if isinstance(x, str) else x)  # 去分隔符
-    time = time.astype('int64')  # 转成可计算的 int64 类型
-    max = time.max()
-    min = time.min()
-    time = time.apply(lambda x: (
-        (x - min) / (max - min) + 1) / 2)  # 归一化到 0.5~1
-    rating = rating * time
-
-    text_embedding = self.tag_embedding_dict.get(row['Book'])
-    return user, book, rating, text_embedding
+    def __getitem__(self, index):
+        row = self.data.iloc[index]
+        user = self.user_to_idx[row['User']]
+        book = self.book_to_idx[row['Book']]
+        rating = row['Rate'].astype('float32')
+        time = row['Time']
+        rating = rating * time
+        text_embedding = self.tag_embedding_dict.get(row['Book'])
+        return user, book, rating, text_embedding
