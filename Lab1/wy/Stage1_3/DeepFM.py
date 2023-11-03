@@ -25,7 +25,7 @@ class DeepFM(nn.Module):
         self.final = nn.Linear(hidden[-1], 1)
 
     def forward(self, x):
-        dense_input, sparse_input = x[:, :len(self.dense_col)], x[:, len(self.dense_col):]
+        sparse_input, dense_input = x[:, :len(self.sparse_col)], x[:, len(self.sparse_col):]
         sparse_input = sparse_input.long()
         sparse_embed = [self.embedding_layer["embedding" + str(i)](sparse_input[:, i]) for i in range(sparse_input.shape[1])]
         # 按照最后一个维度拼接
@@ -34,4 +34,4 @@ class DeepFM(nn.Module):
         x = torch.cat([sparse_embed, dense_input], dim=-1)
         wide_output = self.fm(x)
         deep_output = self.final(self.dnn(x))
-        return F.sigmoid(torch.add(wide_output, deep_output))
+        return F.sigmoid(torch.add(wide_output, deep_output)) * 5
