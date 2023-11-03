@@ -47,8 +47,8 @@ x_train, x_test, y_train, y_test = train_test_split(full_info[sparse_feature + d
 # 构建数据管道
 train_dataset = TensorDataset(torch.tensor(x_train).float(), torch.tensor(y_train).float())
 test_dataset = TensorDataset(torch.tensor(x_test).float(), torch.tensor(y_test).float())
-train_loader = DataLoader(train_dataset, batch_size=256, shuffle=True)
-test_loader = DataLoader(test_dataset, batch_size=256, shuffle=True)
+train_loader = DataLoader(train_dataset, batch_size=4096, shuffle=True)
+test_loader = DataLoader(test_dataset, batch_size=4096, shuffle=True)
 
 
 # 训练
@@ -58,7 +58,7 @@ feature_col = [[{"feature": feature_} for feature_ in dense_feature]] + [[{"feat
 model = DeepFM(hidden, feature_col, dropout)
 criterion = nn.MSELoss()
 optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
-num_epochs = 20
+num_epochs = 10
 
 for epoch in range(num_epochs):
     # 训练
@@ -74,17 +74,26 @@ for epoch in range(num_epochs):
         output_loss_train = loss_sum_train / (i + 1)
 
     model.eval()
-    y_list, y_prediction_list = [], []
+    # y_list, y_prediction_list = [], []
+    # y_array, y_prediction_array = np.array([]), np.array([])
     with torch.no_grad():
         for index, (x_, y_) in enumerate(test_loader):
             y_prediction_ = model(x_)
             loss = criterion(y_prediction_, y_)
-            y_list.append(y_)
-            y_prediction_list.append(y_prediction_)
+            # y_list = torch.tensor(y_).numpy()
+            # for array in y_list:
+            #     y_array = np.append(y_array, array)
+            # y_prediction_list.append(y_prediction_.values)
+            # for array in y_prediction_list:
+            #     y_prediction_array = np.append(y_prediction_array, array)
             loss_sum_test += loss.item()
             output_loss_test = loss_sum_test / (i + 1)
 
-        print(y_list, y_prediction_list)
-        ndcg_score = ndcg_score(np.array(y_list), np.array(y_prediction_list))
-        print("epoch: {}, train_loss: {}, test_loss: {}, ndcg_score: {}".format(epoch, output_loss_train, output_loss_test, ndcg_score))
+        # y_array.tolist()
+        # y_array = np.asarray(y_array)
+        # print(y_array, type(y_array), y_array.shape)
+        # y_prediction_array.tolist()
+        # y_prediction_array = np.asarray(y_prediction_array)
+        # ndcg_score = ndcg_score(y_array, y_prediction_array)
+        print("epoch: {}, train_loss: {}, test_loss: {}".format(epoch + 1, output_loss_train, output_loss_test))
 
