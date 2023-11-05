@@ -356,24 +356,20 @@ class BooleanMatch:
                 while index1 % interval_1 == 0 and index1 < len_1 - interval_1:  # index1 should skip
                     if L1_id_list[index1] == L2_id_list[index2] and L1_id_list[L1_skip_list[index1 // interval_1][1]] == \
                             L2_id_list[index2]:
-                        ret.extend(L1_id_list[index1: index1 + interval_1])
                         index1 += interval_1
                         index2 += 1
                     elif L1_id_list[index1] < L2_id_list[index2] and L1_id_list[L1_skip_list[index1 // interval_1][1]] < \
                             L2_id_list[index2]:
-                        ret.extend(L1_id_list[index1: index1 + interval_1])
                         index1 += interval_1
                     else:
                         break  # fail skip
                 while index2 % interval_2 == 0 and index2 < len_2 - interval_2:  # index2 should skip
                     if L2_id_list[index2] == L1_id_list[index1] and L2_id_list[L2_skip_list[index2 // interval_2][1]] == \
                             L1_id_list[index1]:
-                        ret.extend(L2_id_list[index2: index2 + interval_2])
                         index2 += interval_2
                         index1 += 1
                     elif L2_id_list[index2] < L1_id_list[index1] and L2_id_list[L2_skip_list[index2 // interval_2][1]] < \
                             L1_id_list[index1]:
-                        ret.extend(L2_id_list[index2: index2 + interval_2])
                         index2 += interval_2
                     else:
                         break  # fail skip
