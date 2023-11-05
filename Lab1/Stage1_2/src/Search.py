@@ -105,6 +105,7 @@ class BooleanMatch:
         self.query = self.query.upper()
         self.query = self.query.replace('AND', ' AND ').replace('OR', ' OR ').replace('NOT', ' NOT ')
         self.query = self.query.replace('和', ' AND ').replace('且', ' OR ').replace('非', ' NOT ')
+        self.query = self.query.replace('&', ' AND ').replace('|', ' OR ').replace('！', ' NOT ').replace('!', ' NOT ')
         return self.query.split()
 
     def FindCorrespondBracket(self, index: int) -> int:
@@ -419,3 +420,6 @@ if __name__ == '__main__':
             print(
                 Fore.BLUE + "Thank you for using this searching engine! Welcome your next travel!")
             break
+
+## （喜剧 | 动作） ANd  成龙
+## 张艺谋 AND ! 悬疑

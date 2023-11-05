@@ -105,6 +105,7 @@ class BooleanMatch:
         self.query = self.query.upper()
         self.query = self.query.replace('AND', ' AND ').replace('OR', ' OR ').replace('NOT', ' NOT ')
         self.query = self.query.replace('和', ' AND ').replace('且', ' OR ').replace('非', ' NOT ')
+        self.query = self.query.replace('&',' AND ').replace('|',' OR ').replace('!',' NOT ')
         return self.query.split()
 
     def FindCorrespondBracket(self, index: int) -> int:
