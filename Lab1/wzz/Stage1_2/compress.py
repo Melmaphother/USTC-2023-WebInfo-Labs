@@ -27,11 +27,17 @@ def compress(index_list) -> bytes:
 
 
 if __name__ == "__main__":
-    with open("data/Movie_reverted_dict.json", "r", encoding="UTF-8") as f_in:
+    with open("data/Book_reverted_dict.json", "r", encoding="UTF-8") as f_in:
         reverted_dict = json.load(f_in)
+    
+    with open("data/Book_reverted_dict_to_be_compressed.bin","wb") as f_raw:
+        for key in reverted_dict:
+            for id_ in reverted_dict[key]:
+                f_raw.write(id_.to_bytes(4,"big"))
+                f_raw.write(0xffffffff.to_bytes(4,"big"))
 
-    with open("data/Movie_reverted_dict_compressed.bin", "wb") as f_bin:
-        with open("data/Movie_vocabulary.txt", "w", encoding="UTF-8") as f_txt:
+    with open("data/Book_reverted_dict_compressed.bin", "wb") as f_bin:
+        with open("data/Book_vocabulary.txt", "w", encoding="UTF-8") as f_txt:
             for key in reverted_dict:
                 f_txt.write(key + "%" + str(len(reverted_dict[key])) + "\n")
                 reverted_dict[key] = compress(reverted_dict[key])
