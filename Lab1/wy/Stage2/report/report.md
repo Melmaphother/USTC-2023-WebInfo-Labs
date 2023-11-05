@@ -15,7 +15,116 @@
 3. FM训练算法可以是`SGD`(随机梯度下降法)
 4. FM特征工程: 类别特征One-Hot化(比如实验给出的dataset里的User、Book)、Time可以根据天数离散化分桶
 
+代码实现如下：
+```python
+class FM(nn.Module):
+    # latent_dim是离散特征隐向量的维度, feature_num是特征的数量
+    def __init__(self, feature_num, latent_dim):
+        super(FM, self).__init__()
+        self.latent_dim = latent_dim
+        # 下面定义了三个矩阵
+        self.w0 = nn.Parameter(torch.zeros([1, ]))
+        self.w1 = nn.Parameter(torch.rand([feature_num, 1]))
+        self.w2 = nn.Parameter(torch.rand([feature_num, latent_dim]))
+
+    def forward(self, Input):
+        # 一阶交叉
+        order_1st = self.w0 + torch.mm(Input, self.w1)
+        # 二阶交叉
+        order_2nd = 1 / 2 * torch.sum(
+            torch.pow(torch.mm(Input, self.w2), 2) - torch.mm(torch.pow(Input, 2), torch.pow(self.w2, 2)), dim=1,
+            keepdim=True)
+        return order_1st + order_2nd
+```
+
 ### DNN
 
 <img src="pics/pic2.png" style="zoom:50%;" />
 
+DNN是深度神经网络，可理解成有多个隐藏层的神经网络。层与层全连接，有输入、隐藏、输出层。
+通过前向传播、反向传播得到很好的效果。
+![](pics/pic3.png)
+
+代码实现如下：
+```python
+class DNN(nn.Module):
+    def __init__(self, hidden, dropout=0):
+        super(DNN, self).__init__()
+        # 相邻的hidden层, Linear用于设置全连接层
+        # ModuleList可以将nn.Module的子类加入到List中
+        self.dnn = nn.ModuleList([nn.Linear(layer[0], layer[1]) for layer in list(zip(hidden[:-1], hidden[1:]))])
+        # dropout用于训练, 代表前向传播中有多少概率神经元不被激活
+        # 为了减少过拟合
+        self.dropout = nn.Dropout(dropout)
+
+    def forward(self, x):
+        for linear in self.dnn:
+            x = linear(x)
+            # relu激活函数
+            x = F.relu(x)
+        x = self.dropout(x)
+        return x
+```
+
+### DeepFM
+
+利用$DNN$部分学习高维特征交叉，$FM$部分学习低维特征交叉，二者的结合作为输出。
+
+代码实现如下：
+```python
+class DeepFM(nn.Module):
+    def __init__(self, hidden, feature_col, dropout=0):
+        super(DeepFM, self).__init__()
+        # 连续型特征和离散型特征
+        self.dense_col, self.sparse_col = feature_col
+        self.embedding_layer = nn.ModuleDict({"embedding" + str(i): nn.Embedding(num_embeddings=feature["feature_num"],
+                                                                                 embedding_dim=feature["embedding_dim"])
+                                              for i, feature in enumerate(self.sparse_col)})
+
+        self.feature_num = len(self.dense_col) + len(self.sparse_col) * self.sparse_col[0]["embedding_dim"]
+        # 将feature_num插入到hidden的开头
+        hidden.insert(0, self.feature_num)
+
+        self.fm = FM(self.feature_num, self.sparse_col[0]["embedding_dim"])
+        self.dnn = DNN(hidden, dropout)
+        # 最终输出, 将最后一层输入然后输出一维的结果
+        self.final = nn.Linear(hidden[-1], 1)
+
+    def forward(self, x):
+        sparse_input, dense_input = x[:, :len(self.sparse_col)], x[:, len(self.sparse_col):]
+        sparse_input = sparse_input.long()
+        sparse_embed = [self.embedding_layer["embedding" + str(i)](sparse_input[:, i]) for i in range(sparse_input.shape[1])]
+        # 按照最后一个维度拼接
+        sparse_embed = torch.cat(sparse_embed, dim=-1)
+
+        x = torch.cat([sparse_embed, dense_input], dim=-1)
+        wide_output = self.fm(x)
+        deep_output = self.final(self.dnn(x))
+        return F.sigmoid(torch.add(wide_output, deep_output)) * 5
+```
+> 注意这里最后的实现：
+
+```python
+return F.sigmoid(torch.add(wide_output, deep_output)) * 5
+```
+这部分处理的目的是得到对得分的预测，所以归一化到$[0,1]$之间然后乘5处理。
+
+### 特征选择
+
+1. 稀疏特征选取的是$User$、$Book/Movie$、$time$，在这里对时间戳进行了离散化处理(按天离散化)，对$User$、$Book/Movie$重新编码。
+2. 稠密特征选择的是$raw-score$(豆瓣原始评分)、$be-reading$(在看)、$wanna-read$(想看)、$have-read$(读过)。对每个特征进行归一化处理，输入到model当中。
+
+### 数据集划分
+
+1. 我们这里采取训练集、测试集$8:2$的比例来划分数据集
+2. label为**用户真实打分**、feature为上述的**稀疏特征+稠密特征**
+
+### 训练
+
+> 选用$MSE$作为loss，最后计算$NDCG$
+> 结果如下：
+
+**book:**
+![](pics/pic4.png)
+**movie:**
+![](pics/pic5.png)
