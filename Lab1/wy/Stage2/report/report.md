@@ -1,3 +1,38 @@
+## 同义词、停用词处理部分
+
+1. 停用词部分我们是采用了读取[中文停用词表](https://github.com/goto456/stopwords/blob/master/cn_stopwords.txt)，对比分词后的每个词项与停用词表，如果词项在停用词表中则不加入到最后结果中。
+2. 同义词部分我们是调用了`synonyms`库的`compare`函数实现的。
+
+具体实现代码如下：
+
+```python
+def split_info(self, text: str, mode="jieba") -> List:
+        pattern = '[^A-Za-z0-9\u4e00-\u9fa5]'
+        if mode == "jieba":
+            seg_list = jieba.lcut(re.sub(pattern, '', text), cut_all=False)
+            # seg_list = jieba.lcut(text, cut_all=False)
+        else:
+            # seg_list = pkuseg.pkuseg().cut(re.sub(pattern, '', text))
+            seg_list = pkuseg.pkuseg().cut(text)
+        extracted_word = []
+        print(seg_list)
+        for word in seg_list:
+            if word not in self.stop_word_list:
+                extracted_word.append(word)
+        for i in range(len(extracted_word)):
+            if extracted_word[i] not in self.single_id_info and extracted_word[i] != ' ':
+                self.single_id_info.append(extracted_word[i])
+            for j in range(i + 1, len(extracted_word)):
+                if len(extracted_word[j]) > 0 and len(extracted_word[i]) > 0 and extracted_word[i] != ' ' and extracted_word[j] != ' ':
+                    if extracted_word[j] not in self.single_id_info and synonyms.compare(extracted_word[i],
+                                                                                         extracted_word[j],
+                                                                                         seg=False) > 0.6:
+                        extracted_word[j] = ' '
+        return self.single_id_info
+```
+
+> 这里`seg_list`是初步分词的结果，经过停用词处理(不是停用词)之后加入到`extracted_word`当中。然后遍历`extracted_word`这个列表，如果发现两个词的意思相近则判定为同义词，对后出现的词进行赋值`' '`处理。
+
 ## 推荐部分
 
 > 推荐模型选用了2017年华为诺亚方舟提出的**DeepFM**，是由**DNN+FM**组成的模型
@@ -16,6 +51,7 @@
 4. FM特征工程: 类别特征One-Hot化(比如实验给出的dataset里的User、Book)、Time可以根据天数离散化分桶
 
 代码实现如下：
+
 ```python
 class FM(nn.Module):
     # latent_dim是离散特征隐向量的维度, feature_num是特征的数量
@@ -46,6 +82,7 @@ DNN是深度神经网络，可理解成有多个隐藏层的神经网络。层�
 ![](pics/pic3.png)
 
 代码实现如下：
+
 ```python
 class DNN(nn.Module):
     def __init__(self, hidden, dropout=0):
@@ -71,6 +108,7 @@ class DNN(nn.Module):
 利用$DNN$部分学习高维特征交叉，$FM$部分学习低维特征交叉，二者的结合作为输出。
 
 代码实现如下：
+
 ```python
 class DeepFM(nn.Module):
     def __init__(self, hidden, feature_col, dropout=0):
@@ -102,11 +140,13 @@ class DeepFM(nn.Module):
         deep_output = self.final(self.dnn(x))
         return F.sigmoid(torch.add(wide_output, deep_output)) * 5
 ```
+
 > 注意这里最后的实现：
 
 ```python
 return F.sigmoid(torch.add(wide_output, deep_output)) * 5
 ```
+
 这部分处理的目的是得到对得分的预测，所以归一化到$[0,1]$之间然后乘5处理。
 
 ### 特征选择
