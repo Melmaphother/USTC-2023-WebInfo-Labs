@@ -128,7 +128,7 @@
 
    采用可变长度编码存储倒排表中的 id 列表用可变长度编码压缩，同时将 id 列表的长度记录到词项中，方便解压缩时重新构建倒排表。压缩前先用文档 id 的间距替代文档 id，大大减小了需要存储的字节数。压缩时每个字节的最高位都设置成延续位，剩余7个 bit 用于对 id 的低 7 位进行编码，将其延续位置为 1。如果此时还有字节没有编码完成，则左移 7 位，重复如上操作操作，并把延续位置为 0。
 
-   <div style="display:inline-block">   <img src="assets/compressed.png" alt="image1" width="350">   <img src="assets/to_be_compressed.png" alt="image2" width="350"> </div>
+   ![](assets/compressed.png)
    
    左图为经过压缩过后的倒排表文件，右图为未经过压缩过后的倒排表，可以看到：压缩算法将倒排表从 826KB压缩至 275KB，效果较好。
    
