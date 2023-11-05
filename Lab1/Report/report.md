@@ -23,7 +23,7 @@
     
     - 分词。采用jieba分词中的精确模式对book和movie的简介进行分词，并将其他包含单个词的信息（例如作品名称、作者姓名、作品类型）分别进行分词和不分词处理加入到分词结果中。
     
-    - 去停用词处理。采用链接[https://github.com/guotong1988/chinese_dictionary](https://github.com/guotong1988/chinese_dictionary) 中的停用词词典进行去停用词处理
+    - 去停用词处理。采用链接 [停用词](https://github.com/guotong1988/chinese_dictionary) 中的停用词词典进行去停用词处理
     
     - 同义词替换。应用synonyms库中的compare函数，使用word2vector模型来替换同义词。
     
@@ -43,7 +43,7 @@
   
   实验的最开始本小组先调研了豆瓣读书和豆瓣电影的作品条目网页里的元素，选取其中的作品基本信息作为构建数据集的主要对象。同时还注意到了网页左下角“****人看过”和“****人想看”的数据（图1），敏锐地意识到这些信息对Stage2中推荐环节的作用，加入了数据集中。
   
-  ![Alt text](figure/wanna_watch.png)
+  ![Alt text](assets/wanna_watch.png)
 
 - 请求头的构造
   
@@ -95,8 +95,8 @@
   
   采用可变长度编码存储倒排表中的id列表用可变长度编码压缩，同时将id列表的长度记录到词项中，方便解压缩时重新构建倒排表。压缩时每个字节的最高位都设置成延续位，剩余7个bit用于对id的低7位进行编码，将其延续位置为1。如果此时还有字节没有编码完成，则左移7位，重复如上操作操作，并把延续位置为0。
   
-  <img title="" src=".\figure\compressed.png" alt="Alt text" width="305">
-  <img title="" src=".\figure\to_be_compressed.png" alt="Alt text" width="305">
+  <img title="" src=".\assets\compressed.png" alt="Alt text" width="305">
+  <img title="" src=".\assets\to_be_compressed.png" alt="Alt text" width="305">
 
   解压\TODO
 
@@ -160,3 +160,169 @@
   $$
   
   由于用户在布尔查询时的输入通常不会太复杂，如果将上述文法设计成LR(1)文法每次程序启动都需要先花时间构造LR分析表，但考虑到实际情况里用户的查询间断性较强，这样的文法设计可能会花更多的时间在LR分析表的生成上。本小组采用括号匹配的思想，先递归地匹配左括号，找到其对应的右括号并根据产生式(7)将括号内部的内容用非终结符E表示，直到所有括号都被拆除后再自顶向下递归地先后匹配字符串OR、AND和NOT（匹配操作符而不是文法符号，这样能够避免处理左递归文法），并用对应的布尔操作作用于词项对应的倒排表，将id列表作为结果返回
+
+- 查询示例
+  为了查询的便捷化，我们允许查询条目中出现类似中文表达或中文符号，查询条目对操作符的大小写不敏感，但对查询词项敏感。
+  以下给出部分查询结果，以 movie 为例：
+  - 多个操作符与括号的结合
+    ![](assets/search.png)
+  - AND NOT 的优化
+    ![](assets/search2.png)
+
+- 推荐
+  - 微调示例代码
+    第一步首先对助教所提供的代码进行小幅改动。考虑到时间因素的影响，我们采取了以下的修正方式。
+
+    可以理解的是，评分时间对用户评分的有效性有较为关键的影响因素。时间越久远的评分，其分数的可信度也有一定的下降。为了表征这一下降幅度，我们给评分加入了时间权重：
+
+    - 取所有评分时间的最大值 $max$ 和最小值 $min$。
+
+    - 将评分时间 $time$ 做如下操作：
+      $$
+      time\_value = (time - min) / (max - min)
+      $$
+
+    - 将 $time\_value$ 作为权重加入 $rate$ ：
+      $$
+      rating = rating * time
+      $$
+
+    做出如上修正之后，训练结果中 $loss$ 和 $ndcg$ 分别有如下变化：
+
+    - 未作时间修正
+
+      ![](assets/notime.png)
+
+    - 时间修正
+
+      ![](assets/time.png)
+
+    可以看到，加入时间修正之后，平均 $ndcg$ 有小幅降低，但是 $Train\space loss$ 和 $Test\space loss$ 有显著降低，说明模 型的泛化能力得到了提高。
+
+  - 使用 DeepFM 模型进行推荐
+    - FM(特征交叉)
+
+      <img src="assets/pic1.png" style="zoom:50%;" />
+      
+      > FM的结构大致是: 输入层$\rightarrow$Embedding层$\rightarrow$特征交叉FM层$\rightarrow$输出层
+      >
+      > 交叉的部分是类别特征，数值特征不参与交叉。但是如果将数值特征离散化后加入Embedding层，就可以参与交叉。
+      
+      1. FM模型的方程式为: $y=w_0+\sum\limits_{i=1}^{n}w_ix_i+\sum\limits_{i=1}^{n}\sum\limits_{j=i+1}^{n}<v_i, v_j>x_ix_j$，时间复杂度为$O(kn^2)$,其中$v_i$是第$i$维特征的隐向量。经过化简得到: $y=w_0+\sum\limits_{i=1}^{n}      w_ix_i+\frac{1}{2}\sum\limits_{f=1}^{k}[(\sum\limits_{i=1}^{n}v_{i,f}x_i)^2-\sum\limits_{i=1}^{n}v_{i,f}      ^2x_i^2]$，时间复杂度降为$O(kn)$
+      2. FM用于ranking task的时候可以使用**成对分类函数**作为损失函数
+      3. FM训练算法可以是`SGD`(随机梯度下降法)
+      4. FM特征工程: 类别特征One-Hot化(比如实验给出的dataset里的User、Book)、Time可以根据天数离散化分桶
+
+      代码实现如下：
+      ```python
+      class FM(nn.Module):
+          # latent_dim是离散特征隐向量的维度, feature_num是特征的数量
+          def __init__(self, feature_num, latent_dim):
+              super(FM, self).__init__()
+              self.latent_dim = latent_dim
+              # 下面定义了三个矩阵
+              self.w0 = nn.Parameter(torch.zeros([1, ]))
+              self.w1 = nn.Parameter(torch.rand([feature_num, 1]))
+              self.w2 = nn.Parameter(torch.rand([feature_num, latent_dim]))
+      
+          def forward(self, Input):
+              # 一阶交叉
+              order_1st = self.w0 + torch.mm(Input, self.w1)
+              # 二阶交叉
+              order_2nd = 1 / 2 * torch.sum(
+                  torch.pow(torch.mm(Input, self.w2), 2) - torch.mm(torch.pow(Input, 2), torch.pow(self.w2, 2)),dim=1,
+                  keepdim=True)
+              return order_1st + order_2nd
+      ```
+
+    - DNN
+
+      <img src="assets/pic2.png" style="zoom:50%;" />
+      
+      DNN是深度神经网络，可理解成有多个隐藏层的神经网络。层与层全连接，有输入、隐藏、输出层。
+      通过前向传播、反向传播得到很好的效果。
+      ![](assets/pic3.png)
+      
+      代码实现如下：
+      ```python
+      class DNN(nn.Module):
+          def __init__(self, hidden, dropout=0):
+              super(DNN, self).__init__()
+              # 相邻的hidden层, Linear用于设置全连接层
+              # ModuleList可以将nn.Module的子类加入到List中
+              self.dnn = nn.ModuleList([nn.Linear(layer[0], layer[1]) for layer in list(zip(hidden[:-1], hidden[1:]))])
+              # dropout用于训练, 代表前向传播中有多少概率神经元不被激活
+              # 为了减少过拟合
+              self.dropout = nn.Dropout(dropout)
+      
+          def forward(self, x):
+              for linear in self.dnn:
+                  x = linear(x)
+                  # relu激活函数
+                  x = F.relu(x)
+              x = self.dropout(x)
+              return x
+      ```
+
+    - DeepFM
+
+      利用$DNN$部分学习高维特征交叉，$FM$部分学习低维特征交叉，二者的结合作为输出。
+      
+      代码实现如下：
+      ```python
+      class DeepFM(nn.Module):
+          def __init__(self, hidden, feature_col, dropout=0):
+              super(DeepFM, self).__init__()
+              # 连续型特征和离散型特征
+              self.dense_col, self.sparse_col = feature_col
+              self.embedding_layer = nn.ModuleDict({"embedding" + str(i): nn.Embedding(num_embeddings=feature      ["feature_num"],
+                                                                                       embedding_dim=feature["embedding_dim"])
+                                                    for i, feature in enumerate(self.sparse_col)})
+      
+              self.feature_num = len(self.dense_col) + len(self.sparse_col) * self.sparse_col[0]["embedding_dim"]
+              # 将feature_num插入到hidden的开头
+              hidden.insert(0, self.feature_num)
+      
+              self.fm = FM(self.feature_num, self.sparse_col[0]["embedding_dim"])
+              self.dnn = DNN(hidden, dropout)
+              # 最终输出, 将最后一层输入然后输出一维的结果
+              self.final = nn.Linear(hidden[-1], 1)
+      
+          def forward(self, x):
+              sparse_input, dense_input = x[:, :len(self.sparse_col)], x[:, len(self.sparse_col):]
+              sparse_input = sparse_input.long()
+              sparse_embed = [self.embedding_layer["embedding" + str(i)](sparse_input[:, i]) for i in range      (sparse_input.shape[1])]
+              # 按照最后一个维度拼接
+              sparse_embed = torch.cat(sparse_embed, dim=-1)
+      
+              x = torch.cat([sparse_embed, dense_input], dim=-1)
+              wide_output = self.fm(x)
+              deep_output = self.final(self.dnn(x))
+              return F.sigmoid(torch.add(wide_output, deep_output)) * 5
+      ```
+      > 注意这里最后的实现：
+      
+      ```python
+      return F.sigmoid(torch.add(wide_output, deep_output)) * 5
+      ```
+      这部分处理的目的是得到对得分的预测，所以归一化到$[0,1]$之间然后乘5处理。
+
+    -  特征选择
+
+      1. 稀疏特征选取的是$User$、$Book/Movie$、$time$，在这里对时间戳进行了离散化处理(按天离散化)，对$User$、$Book/Movie$      重新编码。
+      2. 稠密特征选择的是$raw-score$(豆瓣原始评分)、$be-reading$(在看)、$wanna-read$(想看)、$have-read$(读过)。对每个特征      进行归一化处理，输入到model当中。
+
+    - 数据集划分
+
+      1. 我们这里采取训练集、测试集$8:2$的比例来划分数据集
+      2. label为**用户真实打分**、feature为上述的**稀疏特征+稠密特征**
+
+    - 训练
+
+      > 选用$MSE$作为loss，最后计算$NDCG$
+      > 结果如下：
+      
+      **book:**
+      ![](assets/pic4.png)
+      **movie:**
+      ![](assets/pic5.png)
