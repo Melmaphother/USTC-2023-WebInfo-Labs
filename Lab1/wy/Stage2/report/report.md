@@ -1,3 +1,58 @@
+## 分词工具的选择
+
+分词工具我们这里选择了两种：[jieba](https://github.com/fxsjy/jieba)、[pkuseg](https://github.com/lancopku/PKUSeg-python)。
+
+```python
+def split_info(self, text: str, mode="jieba") -> List:
+        pattern = '[^A-Za-z0-9\u4e00-\u9fa5]'
+        if mode == "jieba":
+            seg_list = jieba.lcut(re.sub(pattern, '', text), cut_all=False)
+        else:
+            seg_list = pkuseg.pkuseg().cut(text)
+```
+
+我们在这里提供了分词选择项：如果mode是`"jieba"`那么选用jieba分词，否则选用pkuseg。
+实际处理中我们并未发现jieba分词工具与pkuseg分词工具的具体差别，但从理论上了来说pkuseg分词工具比jieba分词工具表现更优异。
+
+## 展开全部的处理
+
+书籍部分的作者简介和主要内容简介都有可能出现未全部展开的情况，因此在爬虫的时候做如下处理：
+
+```python
+        if book_intro is None:
+            error_msg = book_id + "没有介绍\n"
+            print(error_msg)
+            self.error.append(error_msg)
+            book_content_intro = ''
+            book_author_intro = ''
+        else:
+            # solve no author or no (展开全部) condition
+            if len(book_intro) >= 2:
+                if book_intro[0].text.find("(展开全部)") == -1:
+                    book_content_intro = book_intro[0].text.replace('\n', '')
+                    if book_intro[1].text.find("(展开全部)") == -1:
+                        book_author_intro = book_intro[1].text.replace('\n', '')
+                    else:
+                        book_author_intro = book_intro[2].text.replace('\n', '')
+                else:
+                    book_content_intro = book_intro[1].text.replace('\n', '')
+                    if len(book_intro) == 2:
+                        book_author_intro = ''
+                    else:
+                        if book_intro[2].text.find("(展开全部)") == -1:
+                            book_author_intro = book_intro[2].text.replace('\n', '')
+                        else:
+                            book_author_intro = book_intro[3].text.replace('\n', '')
+            elif len(book_intro) == 1:
+                book_content_intro = book_intro[0].text.replace('\n', '')
+                book_author_intro = ''
+            else:
+                book_content_intro = ''
+                book_author_intro = ''
+```
+
+> 如果记录书籍介绍的部分(`book_intro`)不为空，则判断是否含有(**展开全部**)，如果有则对应的信息在`book_intro`的下一个索引处；如果没有则对应的信息就在`book_intro`的当前索引处。
+
 ## 同义词、停用词处理部分
 
 1. 停用词部分我们是采用了读取[中文停用词表](https://github.com/goto456/stopwords/blob/master/cn_stopwords.txt)，对比分词后的每个词项与停用词表，如果词项在停用词表中则不加入到最后结果中。
