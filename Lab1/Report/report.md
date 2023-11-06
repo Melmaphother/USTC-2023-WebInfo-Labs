@@ -58,7 +58,8 @@
 
 ### **Stage2：** 使用豆瓣数据进行推荐
 
-根据第一阶段以及第二阶段提供的数据，使用大模型技术进行推荐，并对应地计算 `MSE` 以及平均 `NDCG`。
+1. 根据第一阶段以及第二阶段提供的数据，使用传统推荐模型进行推荐，并对应地计算 `MSE` 以及平均 `NDCG`作为模型的评测指标。
+2. 利用TA提供的代码对文字`Tag`进行处理，作为特征用于模型训练。
 
 ## 实现过程介绍
 
@@ -118,7 +119,6 @@
    
    ```py
    def split_info(*self*, *text*: str, *mode*="jieba") -> List:
-   ​    pattern = '[^A-Za-z0-9\u4e00-\u9fa5]'
    ​    if mode == "jieba":
    ​      seg_list = jieba.lcut(re.sub(pattern, '', text), *cut_all*=False)
    ​    else:
@@ -128,7 +128,7 @@
    我们在这里提供了分词选择项：如果 mode 是 `"jieba"` 那么选用 jieba 分词，否则选用 pkuseg。
    
    实际处理中我们并未发现 jieba 分词工具与 pkuseg 分词工具的具体差别，但从理论上来说 pkuseg 分词工具比 jieba 分词工具表现更优异。
-
+   
 3. 去同义词和停用词
    
    - 停用词部分我们是采用了读取[中文停用词表](https://github.com/goto456/stopwords/blob/master/cn_stopwords.txt)，对比分词后的每个词项与停用词表，如果词项在停用词表中则不加入到最后结果中。
@@ -252,6 +252,68 @@ G &\rightarrow (E)\\
   ![](assets/time.png)
 
 可以看到，加入时间修正之后，平均 $ndcg$ 有小幅降低，但是 $Train\space loss$ 和 $Test\space loss$ 有显著降低，明模 型的泛化能力得到了提高。
+
+#### 调库实现推荐
+
+在微调示例代码之后，我们先是通过调用`deepctr`库来实现使用`DeepFM`进行推荐。
+
+代码如下：
+
+```python
+import pandas as pd
+from sklearn.metrics import mean_squared_error
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import LabelEncoder
+from deepctr.models import DeepFM
+from deepctr.feature_column import SparseFeat,get_feature_names
+import numpy as np
+
+data = pd.read_csv("Stage2/book_score.csv")
+
+# 特征
+sparse_features = ["User", "Book", "Time"]
+# 标签
+target = ['Rate']
+# 把特征里的值从0到n开始编号
+for f in sparse_features:
+    transform = LabelEncoder()
+    data[f] = transform.fit_transform(data[f])
+
+# 生成词向量，计算每个特征中的不同特征值个数
+fix_len_feature_column = [SparseFeat(feat, vocabulary_size=data[feat].nunique()) for feat in sparse_features]
+
+linear_feature_columns = fix_len_feature_column
+dnn_feature_columns = fix_len_feature_column
+feature_names = get_feature_names(linear_feature_columns + dnn_feature_columns)
+
+
+train, test = train_test_split(data, test_size=0.2)
+train_model_input = {name:train[name].values for name in feature_names}
+test_model_input = {name:test[name].values for name in feature_names}
+
+print(test['Rate'].values)
+
+# 使用DeepFM训练
+# linear_feature_columns用FM，dnn_feature_columns用DNN
+model = DeepFM(linear_feature_columns, dnn_feature_columns, task='regression')
+# 评价指标用mse，优化器用adam
+model.compile("adam", "mse", metrics=['mse'])
+history = model.fit(train_model_input, train['Rate'].values, batch_size=256, epochs=6, verbose=True, validation_split=0.2 )
+
+
+predict_ = model.predict(test_model_input, batch_size=256)
+predict_true = []
+for value in predict_.values:
+    predict_true.append(value)
+predict_ = predict_.ravel()
+print(predict_)
+print(test['Rate'].values)
+
+mse = round(mean_squared_error(test['Rate'].values, predict_), 4)
+print("mse:", mse)
+```
+
+但是为了加深对`DeepFM`的理解，我们最终还是选择基于`pytorch`手撸`DeepFM`实现ranking task
 
 #### 使用 DeepFM 模型进行推荐
 
