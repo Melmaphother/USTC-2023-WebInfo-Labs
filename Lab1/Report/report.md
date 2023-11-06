@@ -23,6 +23,8 @@
 > Language:  python3 ,  Jupyter Notebook
 >
 > Environment / tool:  Anaconda ,  git
+>
+> Repository:  [WebInfo](https://github.com/Melmaphother/WebInfo)    ( private now)
 
 ## 实验内容简介
 
@@ -84,7 +86,7 @@
    | 属性        | property       | id               | class/ property       |    href                                                         |    href                                                         |
    | 属性的值    | v:itemreviewed | info             | all hidden/ v:summary | https://movie.douban.com/subject/    {movie_id}/comments?status=P | https://movie.douban.com/subject/ {movie_id}/comments?status=F |
    
-   表注：简要介绍信息在所有的电影中有两种形式，一种放在property=“ v:summary”中；另一种由于信息长度过长，需要用户点击“展开   按钮”来看到完整的简介，其完整的信息放在 class=“all hidden”中。
+   表注：简要介绍信息在所有的电影中有两种形式，一种放在 property=“ v:summary” 中；另一种由于信息长度过长，需要用户点击**展开全部**来看到完整的简介，其完整的信息放在 class=“all hidden”中。
    
    | Book Parse | 书名           | 作者、出版社等信息 | 简要介绍 | 想看、在看、看过的人数 | 评分                 |
    | ---------- | -------------- | ------------------ | -------- | ---------------------- |    -------------------- |
@@ -92,10 +94,8 @@
    | 属性       | property       | id                 | class    | id                     |    class                |
    | 属性的值   | v:itemreviewed | info               | intro    | collector              | rating_self clearfix |
 
-   表注：简要介绍中的“展开全部”的处理
+   表注：如果记录书籍介绍的部分(`book_intro`)不为空，则判断是否含有(**展开全部**)，如果有则对应的信息在`book_intro`的下一个索引处；如果没有则对应的信息就在`book_intro`的当前索引处。
    
-   TODO
-
 2. 反爬虫
 
    由于在解析程序把解析失败的错误信息输出到了文件中（ Movie_error.json 和 Book_error.json ），所以能够在爬虫过程中发现大概三十个豆瓣的电影 id 找不到对应的资源。经过检查后发现部分电影和书籍只有在登录过豆瓣账号后才能访问，因此需要请求头中包含 cookie 信息。但测试后发现豆瓣的 cookie 属于 session cookies ，只有在保持网页端页面的会话不关闭的情况下才能生效，有效期较短。
@@ -112,7 +112,24 @@
 
    jieba提供了两种分词模式：精确模式和全模式，分别代表唯一结果分词和多结果分词。本小组最开始采用的是全模式进行分词，但这样做产生了两个问题：一是全模式提供的多结果分词中会有大量词汇的前缀，在下一步的去同义词步骤中会被当做同义词去掉，最后只留下了词汇的前缀，而正确的词汇本身在这一步被替换；二是全模式产生的多结果会对词汇在文档中的 tf 的计算产生干扰，影响实验结果。
 
-2. 去同义词和停用词
+2. 多种分词方式的选择
+
+   分词工具我们这里选择了两种：[jieba](https://github.com/fxsjy/jieba)、[pkuseg](https://github.com/lancopku/PKUSeg-python)。
+
+   ```py
+   def split_info(*self*, *text*: str, *mode*="jieba") -> List:
+   ​    pattern = '[^A-Za-z0-9\u4e00-\u9fa5]'
+   ​    if mode == "jieba":
+   ​      seg_list = jieba.lcut(re.sub(pattern, '', text), *cut_all*=False)
+   ​    else:
+   ​      seg_list = pkuseg.pkuseg().cut(text)
+   ```
+
+   我们在这里提供了分词选择项：如果 mode 是 `"jieba"` 那么选用 jieba 分词，否则选用 pkuseg。
+
+   实际处理中我们并未发现 jieba 分词工具与 pkuseg 分词工具的具体差别，但从理论上来说 pkuseg 分词工具比 jieba 分词工具表现更优异。
+
+3. 去同义词和停用词
 
    - 停用词部分我们是采用了读取[中文停用词表](https://github.com/goto456/stopwords/blob/master/cn_stopwords.txt)，对比分词后的每个词项与停用词表，如果词项在停用词表中则不加入到最后结果中。
 
@@ -156,7 +173,7 @@
      
      根据长尾效应，绝大部分词项在文档中出现频率较小，一旦用 NOT 取补集，空间复杂度就会极大(通常接近全集的长度)。通过优化 AND 后面立刻跟上的 NOT 这一情况可以减小程序的空间复杂度。在这种情况下，如果不采取优化，不仅空间复杂度接近全集的长度 ，而且在 AND 操作时由于其中一个列表由 NOT 生成，时间复杂度也接近全集的长度。采取的优化方案的伪代码如下：
      
-     ```c
+     ```py
      Id_List AND_NOT(Id_List op1, Id_List op2){
          p1 = p2 = i =0;
          while(p1 != op1.len || p2 != op2.len){
@@ -176,7 +193,7 @@
      } 
      ```
      
-     优化后，代码的时间复杂度为 $O(op1.len+op2.len)$，空间复杂度为 $O(min\{op1.len,op2.len\})$，相比原先的方式有明显 优化
+     优化后，代码的时间复杂度为 $O(op1.len+op2.len)$，空间复杂度为 $O(min\{op1.len,op2.len\})$，相比原先的方式有明显优化
 
 2. 文法设计
 
@@ -240,7 +257,7 @@
    >
    > 交叉的部分是类别特征，数值特征不参与交叉。但是如果将数值特征离散化后加入Embedding层，就可以参与交叉。
    
-   - FM模型的方程式为: $y=w_0+\sum\limits_{i=1}^{n}w_ix_i+\sum\limits_{i=1}^{n}\sum\limits_{j=i+1}^{n<v_i,  v_j>x_ix_j$，时间复杂度为$O(kn^2)$,其中$v_i$是第$i$维特征的隐向量。经过化简得到: $y=w_0+\sum\limits{i=1}^ {n}      w_ix_i+\frac{1}{2}\sum\limits_{f=1}^{k}[(\sum\limits_{i=1}^{n}v_{i,f}x_i)^2-\sum\limits{i=1}^{n}v_ {i,f}      ^2x_i^2]$，时间复杂度降为$O(kn)$
+   - FM模型的方程式为:$y=w_0+\sum\limits_{i=1}^{n}w_ix_i+\sum\limits_{i=1}^{n}\sum\limits_{j=i+1}^{n}<v_i,  v_j>x_ix_j$ ，时间复杂度为$O(kn^2)$,其中$v_i$是第$i$维特征的隐向量。经过化简得到: $y=w_0+\sum\limits{i=1}^ {n}w_ix_i+\frac{1}{2}\sum\limits_{f=1}^{k}[(\sum\limits_{i=1}^{n}v_{i,f}x_i)^2-\sum\limits{i=1}^{n}v_ {i,f}^2x_i^2]$，时间复杂度降为 $O(kn)$
    - FM用于ranking task的时候可以使用**成对分类函数**作为损失函数
    - FM训练算法可以是`SGD`(随机梯度下降法)
    - FM特征工程: 类别特征One-Hot化(比如实验给出的dataset里的User、Book)、Time可以根据天数离散化分桶
@@ -339,8 +356,8 @@
 
 4. 特征选择
 
-   -  稀疏特征选取的是$User$、$Book/Movie$、$time$，在这里对时间戳进行了离散化处理(按天离散化)，对$User$、$Boo     Movie$      重新编码。
-   - 稠密特征选择的是$raw-score$(豆瓣原始评分)、$be-reading$(在看)、$wanna-read$(想看)、$have-read$(读过)   每  特 征      进行归一化处理，输入到model当中。
+   -  稀疏特征选取的是$User$、$Book/Movie$、$time$，在这里对时间戳进行了离散化处理(按天离散化)，对$User$、$Book$、$Movie$ 重新编码。
+   - 稠密特征选择的是$raw-score$(豆瓣原始评分)、$be-reading$(在看)、$wanna-read$(想看)、$have-read$(读过)   每个特征进行归一化处理，输入到 model 当中。
 
 5. 数据集划分
 
@@ -356,3 +373,5 @@
    ![](assets/pic4.png)
    **movie:**
    ![](assets/pic5.png)
+
+   可以看到，训练结果的平均 `ndcg` 相较于示例代码有较大的提升，这说明我们的训练和推荐结果是有效且可行的。
