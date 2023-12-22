@@ -1,0 +1,2 @@
+2023-12-21 20:56:58,715 - root - INFO - Namespace(seed=2022, data_name='Douban', data_dir='data/', cuda=False, gpu_id=0, use_pretrain=0, pretrain_model_path='trained_model/KG_free.pth', embed_dim=32, l2loss_lambda=0.0001, train_batch_size=1024, test_batch_size=2048, lr=0.001, n_epoch=1000, stopping_steps=10, print_every=1, evaluate_every=10, Ks='[5, 10]', save_dir='trained_model/Douban/KG_free/dim32_lr0.001_l20.0001/')
+2023-12-21 20:56:58,715 - root - INFO - Running on cpu
