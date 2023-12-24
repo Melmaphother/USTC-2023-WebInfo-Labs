@@ -1,18 +1,18 @@
-for cf_batch_size in 512 1024 2048
-do
-    for kg_batch_size in 1024 2048 4096
-    do
-    	for test_batch_size in 1024 2048 4096
-    	do
-    	    python3 ./main_Embedding_based.py --cf_batch_size $cf_batch_size --kg_batch_size $kg_batch_size --test_batch_size $test_batch_size
-    	done
-    done
-done
-
 for embed_dim in 16 24 32 48 64
 do
     for relation_dim in  16 24 32 48 64
     do
     	python3 ./main_Embedding_based.py --embed_dim $embed_dim --relation_dim $relation_dim
+    done
+done
+
+for lr in 1e-2 1e-4 5e-4 2e-3
+do
+    for l2 in 1e-4 1e-5 1e-3 5e-5 2e-4
+    do
+        if [ "$lr" = "0.01" ]; then
+            $l2=1e-3
+        fi
+    	python3 ./main_Embedding_based.py --lr $lr --kg_l2loss_lambda $l2 --cf_l2loss_lambda $l2 --cuda
     done
 done
