@@ -1,7 +1,7 @@
 import argparse
 
 
-def parse_args(cf_batch_size, kg_batch_size, test_batch_size, embed_dim, relation_dim):
+def parse_args():
     parser = argparse.ArgumentParser(description="Run Embedding_based.")
 
     parser.add_argument('--seed', type=int, default=2022,
@@ -22,16 +22,16 @@ def parse_args(cf_batch_size, kg_batch_size, test_batch_size, embed_dim, relatio
     parser.add_argument('--pretrain_model_path', nargs='?', default='trained_model/Embedding_based.pth',
                         help='Path of stored model.')
 
-    parser.add_argument('--cf_batch_size', type=int, default=cf_batch_size,      #
+    parser.add_argument('--cf_batch_size', type=int, default=1024,      #
                         help='CF batch size.')
-    parser.add_argument('--kg_batch_size', type=int, default=kg_batch_size,      # 
+    parser.add_argument('--kg_batch_size', type=int, default=2048,      # 
                         help='KG batch size.')
-    parser.add_argument('--test_batch_size', type=int, default=test_batch_size,    #
+    parser.add_argument('--test_batch_size', type=int, default=2048,    #
                         help='Test batch size (the user number to test every batch).')
 
-    parser.add_argument('--embed_dim', type=int, default=embed_dim,            #
+    parser.add_argument('--embed_dim', type=int, default=32,            #
                         help='User / item / entity Embedding size.')
-    parser.add_argument('--relation_dim', type=int, default=relation_dim,         #
+    parser.add_argument('--relation_dim', type=int, default=32,         #
                         help='Relation Embedding size.')
 
     parser.add_argument('--KG_embedding_type', type=str, default='TransE',

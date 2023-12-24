@@ -59,7 +59,7 @@ def evaluate(model, dataloader, Ks, device):
     return cf_scores, metrics_dict
 
 
-def train(args, input_argv):
+def train(args):
     # seed
     random.seed(args.seed)
     np.random.seed(args.seed)
@@ -165,7 +165,7 @@ def train(args, input_argv):
             metrics_cols.append('{}@{}'.format(m, k))
     metrics_df = pd.DataFrame(metrics_df).transpose()
     metrics_df.columns = metrics_cols
-    metrics_df.to_csv(args.save_dir + '/metrics{}_{}_{}_{}_{}.tsv'.format(input_argv[1],input_argv[2],input_argv[3],input_argv[4],input_argv[5]), sep='\t', index=False)
+    metrics_df.to_csv(args.save_dir + '/metrics{}_{}_{}_{}_{}.tsv'.format(args.cf_batch_size, args.kg_batch_size, args.test_batch_size, args.embed_dim, args.relation_dim), sep='\t', index=False)
 
     # print best metrics
     best_metrics = metrics_df.loc[metrics_df['epoch_idx'] == best_epoch].iloc[0].to_dict()
@@ -197,11 +197,6 @@ def predict(args):
 
 
 if __name__ == '__main__':
-    cf_batch_size = sys.argv[1]
-    kg_batch_size = sys.argv[2]
-    test_batch_size = sys.argv[3]
-    embed_dim = sys.argv[4]
-    relation_dim = sys.argv[5]
-    args = parse_args(cf_batch_size, kg_batch_size, test_batch_size, embed_dim, relation_dim)
-    train(args,sys.argv)
+    args = parse_args()
+    train(args)
     # predict(args)

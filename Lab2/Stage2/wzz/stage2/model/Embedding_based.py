@@ -177,7 +177,6 @@ class Embedding_based(nn.Module):
         item_cf_embed = item_embed * item_kg_embed                                      # (n_items, embed_dim)
 
         cf_score = torch.matmul(user_embed, item_cf_embed.transpose(0, 1))              # (n_users, n_items)
-        
         return cf_score
 
 

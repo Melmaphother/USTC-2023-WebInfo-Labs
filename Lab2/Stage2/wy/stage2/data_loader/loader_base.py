@@ -149,8 +149,9 @@ class DataLoaderBase(object):
 
     def generate_kg_batch(self, kg_dict, batch_size, highest_neg_idx):
         exist_heads = kg_dict.keys()
+        exist_heads_sequence = sorted(exist_heads)
         if batch_size <= len(exist_heads):
-            batch_head = random.sample(exist_heads, batch_size)
+            batch_head = random.sample(exist_heads_sequence, batch_size)
         else:
             if len(list(exist_heads)) != 0:
                 batch_head = np.random.choice(list(exist_heads), batch_size, replace=True).tolist()
